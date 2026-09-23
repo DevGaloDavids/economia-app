@@ -7,43 +7,176 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Consultar los datos de Supabase
-const { data, error } = await supabase.from("cuentas").select("*");
-const cuentas = data || [];
+const { data: movimientos, error } = await supabase
+  .from("Movimientos")
+  .select("importe, tipo");
+
+// Cálculo rápido del balance total sumando tus cuentas
+const balanceTotal = (movimientos || []).reduce((acc, mov) => {
+  const cantidad = Number(mov.importe) || 0;
+  return mov.tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+}, 0);
+
+// 3. Consultar solo los últimos 3 movimientos para el desglose visual
+const { data: ultimosMovimientos } = await supabase
+  .from("Movimientos")
+  .select("id, categoria, subcategoria, importe, tipo")
+  .order("fecha", { ascending: false })
+  .limit(3);
+
+const listaMovimientos = ultimosMovimientos || [];
 ---
 
 <html lang="es">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Mi Economía</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Mi Economía</title>
 
-		<!-- Configuración PWA -->
-		<link rel="manifest" href="/manifest.json" />
-		<meta name="theme-color" content="#0f172a" />
-		<meta name="mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-capable" content="yes" />
-	</head>
-	<body class="bg-slate-900 text-white p-6 font-sans">
-		<div class="max-w-md mx-auto">
-			<h1 class="text-2xl font-bold text-emerald-400 mb-4">
-				💳 Mi Economía Personal
-			</h1>
-			<p class="text-slate-400 mb-6">Hello World desde Supabase:</p>
+    <!-- Configuración PWA -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#090d16" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+  </head>
+  <body class="bg-[#090d16] text-slate-100 font-sans antialiased min-h-screen pb-24 select-none">
+    
+    <div class="max-w-md mx-auto px-4 pt-6 space-y-5">
+      
+      <!-- 1. Encabezado superior tipo Samsung Health -->
+      <header class="flex justify-between items-center py-2">
+        <div>
+          <h1 class="text-2xl font-bold tracking-tight text-white">Mi Economía</h1>
+          <p class="text-xs text-slate-400">Resumen financiero</p>
+        </div>
+        <!-- Avatar / Perfil -->
+        <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner">
+          ME
+        </div>
+      </header>
 
-			<div class="space-y-3">
-				{
-					cuentas.map((cuenta) => (
-						<div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
-							<span class="font-medium text-slate-200">
-								{cuenta.nombre}
-							</span>
-							<span class="font-bold text-emerald-400">
-								{cuenta.saldo_actual} €
-							</span>
-						</div>
-					))
-				}
+      <!-- 2. Barra de categorías / Píldoras superiores (Scroll horizontal) -->
+      <nav class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-sm font-medium">
+        <button class="px-4 py-2 bg-slate-800 text-white rounded-full border border-slate-700/80 shrink-0 flex items-center gap-2 active:scale-95 transition">
+          <span>📊</span> General
+        </button>
+        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
+          <span>💳</span> Cuentas
+        </button>
+        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
+          <span>📉</span> Gastos
+        </button>
+        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
+          <span>🎯</span> Presupuesto
+        </button>
+      </nav>
+
+      <!-- 3. Tarjeta Principal Estilo OneUI (Balance Global) -->
+      <a href="/balance" class="block bg-slate-900/90 hover:bg-slate-900 border border-slate-800/80 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
+        <!-- Resplandor ambiental de fondo -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="flex justify-between items-start mb-4">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Balance Total</span>
+          <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20 font-medium">
+            Al día
+          </span>
+        </div>
+
+        <div class="mb-6">
+          <div class="text-4xl font-extrabold tracking-tight text-white mb-1">
+            {balanceTotal.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €
+          </div>
+          <p class="text-xs text-slate-400">Sumatorio de todas tus cuentas</p>
+        </div>
+
+		<!-- Desglose de Últimos Movimientos dentro de la tarjeta -->
+		<div class="space-y-2.5 pt-4 border-t border-slate-800/80">
+		{listaMovimientos.length > 0 ? (
+			listaMovimientos.map((mov) => (
+			<div class="flex justify-between items-center text-sm">
+				<div class="flex items-center gap-2">
+				<!-- Icono rápido según si es ingreso o gasto -->
+				<span class="text-xs">{mov.tipo === "ingreso" ? "📈" : "📉"}</span>
+				<span class="text-slate-300 font-medium">
+					{mov.categoria} {mov.subcategoria ? `• ${mov.subcategoria}` : ""}
+				</span>
+				</div>
+				
+				<!-- Importe en verde si es ingreso, en blanco/rojo si es gasto -->
+				<span class={`font-semibold ${mov.tipo === "ingreso" ? "text-emerald-400" : "text-slate-100"}`}>
+				{mov.tipo === "ingreso" ? "+" : "-"}{Number(mov.importe).toFixed(2)} €
+				</span>
 			</div>
+			))
+		) : (
+			<p class="text-xs text-slate-500">Sin movimientos recientes</p>
+		)}
 		</div>
-	</body>
+      </a>
+
+      <!-- 4. Grid de 2 Columnas estilo widgets Samsung -->
+      <div class="grid grid-cols-2 gap-3.5">
+        
+        <!-- Tarjeta 1: Gastos del Mes -->
+        <a href="/movimientos" class="bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-900/30 hover:border-indigo-800/50 rounded-3xl p-4 flex flex-col justify-between h-36 transition active:scale-95 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-medium text-slate-400">Gastos Mes</span>
+            <div class="w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs">💸</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-white mb-1">0,00 €</div>
+            <span class="text-[10px] text-slate-400 block">Pulse para ver lista</span>
+          </div>
+        </a>
+
+        <!-- Tarjeta 2: Categoría destacada / Resumen -->
+        <a href="/categorias" class="bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-3xl p-4 flex flex-col justify-between h-36 transition active:scale-95 shadow-lg">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-medium text-slate-400">Categorías</span>
+            <div class="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center text-xs">🏷️</div>
+          </div>
+          <div>
+            <div class="text-lg font-bold text-white mb-1">Sin datos</div>
+            <span class="text-[10px] text-purple-400 font-medium">Ver desglose &rarr;</span>
+          </div>
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- 5. Barra de navegación inferior fija estilo Samsung (Floating Bottom Nav) -->
+    <div class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-50">
+      <nav class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl">
+        
+        <a href="/" class="flex flex-col items-center text-emerald-400">
+          <span class="text-lg">🏠</span>
+          <span class="text-[10px] font-medium mt-0.5">Inicio</span>
+        </a>
+
+        <a href="/movimientos" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+          <span class="text-lg">📄</span>
+          <span class="text-[10px] font-medium mt-0.5">Movimientos</span>
+        </a>
+
+        <!-- Botón flotante central de "+" para añadir gasto -->
+        <button class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-6 shadow-lg shadow-emerald-500/30 active:scale-90 transition">
+          +
+        </button>
+
+        <a href="/estadisticas" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+          <span class="text-lg">📊</span>
+          <span class="text-[10px] font-medium mt-0.5">Stats</span>
+        </a>
+
+        <a href="/ajustes" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+          <span class="text-lg">⚙️</span>
+          <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
+        </a>
+
+      </nav>
+    </div>
+
+  </body>
 </html>
