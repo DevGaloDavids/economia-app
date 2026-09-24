@@ -1,0 +1,135 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getComprasData, getTransporteData, getBarberiaData } from '../services/finance';
+import { formatEuros } from '../utils/formatters';
+
+export const prerender = false;
+
+// Carga directa de datos desde el servicio
+const { restanteCompras, ultimos5 } = await getComprasData();
+const { restanteTransporte, porcentajes } = await getTransporteData();
+const { restanteBarberia } = await getBarberiaData();
+---
+
+<MainLayout title="Compras - Mi Economía" activeTab="compras">
+  <div class="space-y-4">
+    
+    <!-- 1. TARJETA PRINCIPAL VERDE: Compras -->
+    <div class="bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border border-emerald-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+      <div class="flex justify-between items-start mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🛒</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Compras</span>
+        </div>
+        <span class="text-[10px] bg-emerald-500/15 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium">
+          Presupuesto
+        </span>
+      </div>
+
+      <div class="mb-5">
+        <div class={`text-3xl font-extrabold ${restanteCompras >= 0 ? "text-white" : "text-rose-400"}`}>
+          {formatEuros(restanteCompras)}
+        </div>
+        <p class="text-[11px] text-slate-400">Restante disponible para compras</p>
+      </div>
+
+      <!-- ÚLTIMOS 5 MOVIMIENTOS -->
+      <div class="pt-3 border-t border-emerald-900/40 space-y-2.5">
+        <span class="text-[11px] font-semibold text-emerald-400/90 uppercase tracking-wider block">Últimos movimientos</span>
+        {ultimos5 && ultimos5.length > 0 ? (
+          ultimos5.map((m) => {
+            const esIngreso = String(m.tipo || '').trim().toLowerCase() === 'ingreso';
+            return (
+              <div class="flex justify-between items-center text-xs">
+                <div class="flex items-center gap-2 truncate pr-2">
+                  <span class="text-slate-400 text-[10px]">{m.fecha}</span>
+                  <span class="text-slate-200 font-medium truncate">{m.concepto || 'Sin concepto'}</span>
+                </div>
+                <span class={`font-semibold shrink-0 ${esIngreso ? 'text-emerald-400' : 'text-slate-300'}`}>
+                  {esIngreso ? '+' : '-'}{formatEuros(Number(m.importe))}
+                </span>
+              </div>
+            );
+          })
+        ) : (
+          <p class="text-xs text-slate-500">Sin movimientos registrados</p>
+        )}
+      </div>
+    </div>
+
+    <!-- 2. GRID FORZADO EN 2 COLUMNAS -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
+
+      <!-- TARJETA PEQUEÑA 1: Transporte (Naranja) -->
+      <div style="background: linear-gradient(to bottom right, rgba(67, 20, 7, 0.5), #0f172a, #0f172a); border: 1px solid rgba(234, 88, 12, 0.3); border-radius: 1.25rem; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 13px;">🚗</span>
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #fb923c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Transporte
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <div style={`font-size: 18px; font-weight: 800; ${restanteTransporte >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}>
+              {formatEuros(restanteTransporte)}
+            </div>
+            <p style="font-size: 9px; color: #94a3b8; margin: 0;">Restante</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(234, 88, 12, 0.2); font-size: 10px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;">
+            <span style="display: flex; align-items: center; gap: 4px;">⛽ Gasolina</span>
+            <span style="font-weight: bold; color: #fb923c;">{porcentajes.gasolina}%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;">
+            <span style="display: flex; align-items: center; gap: 4px;">🚌 Público</span>
+            <span style="font-weight: bold; color: #fb923c;">{porcentajes.transporte}%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;">
+            <span style="display: flex; align-items: center; gap: 4px;">🛵 Motos</span>
+            <span style="font-weight: bold; color: #fb923c;">{porcentajes.motos_bicis}%</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; color: #cbd5e1;">
+            <span style="display: flex; align-items: center; gap: 4px;">🧼 Limpieza</span>
+            <span style="font-weight: bold; color: #fb923c;">{porcentajes.limpiezas}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETA PEQUEÑA 2: Barbería (Negro) -->
+      <div style="background: linear-gradient(to bottom right, #09090b, #18181b, #000000); border: 1px solid rgba(63, 63, 70, 0.6); border-radius: 1.25rem; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 13px;">💈</span>
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #d4d4d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Barbería
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <div style={`font-size: 18px; font-weight: 800; ${restanteBarberia >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}>
+              {formatEuros(restanteBarberia)}
+            </div>
+            <p style="font-size: 9px; color: #94a3b8; margin: 0;">Restante</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(63, 63, 70, 0.4);">
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: #f59e0b;">
+            <span>⚠️</span>
+            <span>Sacar efectivo</span>
+          </div>
+          <p style="font-size: 9px; color: #94a3b8; margin: 3px 0 0 0; line-height: 1.2;">
+            Llevar metálico antes de ir.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</MainLayout>

@@ -1,0 +1,133 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { getTarjetaData } from '../services/finance';
+import { formatEuros } from '../utils/formatters';
+import { generateSVGPath } from '../utils/chart';
+
+export const prerender = false;
+
+// Configuración visual para cada tarjeta
+const configuracionTarjetas = [
+  {
+    nombre: "RevolutCP",
+    icono: "💳",
+    gradientClass: "from-purple-950/50 via-slate-900 to-slate-900 border-purple-800/40",
+    glowClass: "bg-purple-500/15",
+    textClass: "text-purple-400",
+    badgeClass: "bg-purple-500/15 text-purple-300 border-purple-500/30",
+    strokeColor: "#c084fc",
+    stopColor: "#a855f7",
+    gradId: "purpleGrad"
+  },
+  {
+    nombre: "RevolutCR",
+    icono: "👑",
+    gradientClass: "from-amber-950/40 via-slate-900 to-slate-900 border-amber-600/30",
+    glowClass: "bg-amber-500/15",
+    textClass: "text-amber-400",
+    badgeClass: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    strokeColor: "#fbbf24",
+    stopColor: "#f59e0b",
+    gradId: "amberGrad"
+  },
+  {
+    nombre: "Pulse",
+    icono: "💚",
+    gradientClass: "from-emerald-950/40 via-slate-900 to-slate-900 border-emerald-600/30",
+    glowClass: "bg-emerald-500/15",
+    textClass: "text-emerald-400",
+    badgeClass: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+    strokeColor: "#34d399",
+    stopColor: "#10b981",
+    gradId: "emeraldGrad"
+  },
+  {
+    nombre: "Trade",
+    icono: "📈",
+    gradientClass: "from-zinc-950 via-zinc-900 to-black border-zinc-700/50",
+    glowClass: "bg-zinc-500/10",
+    textClass: "text-zinc-300",
+    badgeClass: "bg-zinc-800 text-zinc-300 border-zinc-700",
+    strokeColor: "#a1a1aa",
+    stopColor: "#71717a",
+    gradId: "zincGrad"
+  },
+  {
+    nombre: "Axa",
+    icono: "🛡️",
+    gradientClass: "from-blue-950/60 via-slate-900 to-slate-900 border-blue-700/40",
+    glowClass: "bg-blue-500/15",
+    textClass: "text-blue-400",
+    badgeClass: "bg-blue-500/15 text-blue-300 border-blue-500/30",
+    strokeColor: "#60a5fa",
+    stopColor: "#3b82f6",
+    gradId: "blueGrad"
+  }
+];
+
+// Cargamos los datos de todas las tarjetas en paralelo
+const tarjetasData = await Promise.all(
+  configuracionTarjetas.map(async (cfg) => {
+    const data = await getTarjetaData(cfg.nombre);
+    const chart = generateSVGPath(data.historial10, 320, 60);
+    return { ...cfg, ...data, chart };
+  })
+);
+---
+
+<MainLayout title="Carteras - Mi Economía" activeTab="carteras">
+  <div class="space-y-4">
+    {tarjetasData.map((item) => (
+      <div class={`bg-gradient-to-br ${item.gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden`}>
+        <!-- Resplandor ambiental -->
+        <div class={`absolute -top-10 -right-10 w-32 h-32 ${item.glowClass} rounded-full blur-2xl pointer-events-none`}></div>
+
+        <!-- Encabezado de la tarjeta -->
+        <div class="flex justify-between items-start mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">{item.icono}</span>
+            <span class={`text-xs font-semibold uppercase tracking-wider ${item.textClass}`}>
+              {item.nombre}
+            </span>
+          </div>
+          <span class={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${item.badgeClass}`}>
+            Últimos 10 registros
+          </span>
+        </div>
+
+        <!-- Saldo actual -->
+        <div class="mb-4">
+          <div class="text-3xl font-extrabold text-white">
+            {formatEuros(item.saldoActual)}
+          </div>
+          <p class="text-[11px] text-slate-400">Saldo actual disponible</p>
+        </div>
+
+        <!-- Gráfica SVG -->
+        {item.historial10.length > 1 ? (
+          <div class="pt-2 border-t border-slate-800/80 relative">
+            <svg viewBox="0 0 320 60" class="w-full h-16 overflow-visible">
+              <defs>
+                <linearGradient id={item.gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color={item.stopColor} stop-opacity="0.35" />
+                  <stop offset="100%" stop-color={item.stopColor} stop-opacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              <path d={item.chart.areaPath} fill={`url(#${item.gradId})`} />
+              <path d={item.chart.path} fill="none" stroke={item.strokeColor} stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+              {item.chart.lastPoint && (
+                <circle cx={item.chart.lastPoint.x} cy={item.chart.lastPoint.y} r="4" fill={item.strokeColor} class="animate-pulse" />
+              )}
+            </svg>
+          </div>
+        ) : (
+          <p class="text-xs text-slate-500 pt-3 border-t border-slate-800/80">
+            Se necesitan al menos 2 registros para la gráfica
+          </p>
+        )}
+      </div>
+    ))}
+  </div>
+</MainLayout>

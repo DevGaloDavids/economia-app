@@ -1,314 +1,117 @@
 ---
-import { createClient } from "@supabase/supabase-js";
-import '../styles/global.css';
+import MainLayout from '../layouts/MainLayout.astro';
+import { getPatrimonioData, getBalanceData, getGastosPendientesData } from '../services/finance';
+import { formatEuros } from '../utils/formatters';
 
-// Forzar renderizado dinámico en el servidor (SSR)
 export const prerender = false;
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// ==========================================
-// 1. LÓGICA TARJETA NUEVA: SALDO DE CUENTAS
-// ==========================================
-
-const { data: registrosCuentas } = await supabase
-  .from("Cuentas")
-  .select("cuenta, importe, fecha, tipo")
-  .order("fecha", { ascending: false });
-
-const cuentasData = registrosCuentas || [];
-
-const saldosPorCuenta: Record<string, number> = {};
-const cuentasUltimoSaldo = ["RevolutCP", "RevolutCR", "Axa"];
-
-cuentasData.forEach((reg) => {
-  const nombreCuenta = reg.cuenta;
-  const cantidad = Number(reg.importe) || 0;
-  const tipoLimpio = String(reg.tipo || '').trim().toLowerCase();
-
-  if (cuentasUltimoSaldo.includes(nombreCuenta)) {
-    if (saldosPorCuenta[nombreCuenta] === undefined) {
-      saldosPorCuenta[nombreCuenta] = cantidad;
-    }
-  } else {
-    if (saldosPorCuenta[nombreCuenta] === undefined) {
-      saldosPorCuenta[nombreCuenta] = 0;
-    }
-
-    if (tipoLimpio === "ingreso") {
-      saldosPorCuenta[nombreCuenta] += cantidad;
-    } else {
-      saldosPorCuenta[nombreCuenta] -= cantidad;
-    }
-  }
-});
-
-// Orden personalizado obligatorio para las cuentas
-const ordenDeseado = ["RevolutCP", "RevolutCR", "Pulse", "Trade", "Axa"];
-
-// Convertimos a array y aplicamos el orden fijo
-const listaCuentasDesglose = Object.entries(saldosPorCuenta)
-  .map(([nombre, saldo]) => ({ nombre, saldo }))
-  .sort((a, b) => {
-    const posA = ordenDeseado.indexOf(a.nombre);
-    const posB = ordenDeseado.indexOf(b.nombre);
-    return (posA === -1 ? 99 : posA) - (posB === -1 ? 99 : posB);
-  });
-
-// Suma de todas las cuentas para la cifra grande en la tarjeta
-const patrimonioTotal = Object.values(saldosPorCuenta).reduce((acc, saldo) => acc + saldo, 0);
-
-// ==========================================
-// 2. LÓGICA TARJETA MODIFICADA: BALANCE TOTAL Y COMPRAS
-// ==========================================
-
-// 2.1 Consultar todos los datos de 'Movimientos'
-const { data: movimientos } = await supabase
-  .from("Movimientos")
-  .select("importe, tipo, categoria");
-
-const listaMovimientos = movimientos || [];
-
-// Cálculo del balance base de Movimientos (Ingresos - Gastos)
-const balanceMovimientos = listaMovimientos.reduce((acc, mov) => {
-  console.log(mov);
-  const cantidad = Number(mov.importe) || 0;
-  const tipoLimpio = String(mov.tipo || '').trim().toLowerCase();
-  return tipoLimpio === "ingreso" ? acc + cantidad : acc - cantidad;
-}, 0);
-
-console.log("Calculo cuenta movs: "+balanceMovimientos);
-
-// 2.2 Consultar la tabla 'GastosFijos' para los que tienen gastado = false
-const { data: gastosFijosPendientes } = await supabase
-  .from("GastosFijos")
-  .select("cantidad")
-  .eq("gastado", false);
-
-const totalGastosFijosPendientes = (gastosFijosPendientes || []).reduce((acc, gf) => {
-  return acc + (Number(gf.cantidad) || 0);
-}, 0);
-
-console.log("Calculo cuenta fijos: "+totalGastosFijosPendientes);
-
-// Balance Total final = Balance de Movimientos + Gastos Fijos NO gastados (FALSE)
-const balanceTotalFinal = balanceMovimientos + totalGastosFijosPendientes;
-
-// 2.3 Calcular cuánto queda para la 'Compra' (Categoría "Compras")
-const disponibleCompras = listaMovimientos
-  .filter(mov => String(mov.categoria || '').trim().toLowerCase() === "compras")
-  .reduce((acc, mov) => {
-    const cantidad = Number(mov.importe) || 0;
-    const tipoLimpio = String(mov.tipo || '').trim().toLowerCase();
-    return tipoLimpio === "ingreso" ? acc + cantidad : acc - cantidad;
-  }, 0);
-
-  // ==========================================
-// 3. LÓGICA TARJETA ROJA: GASTOS FIJOS PENDIENTES
-// ==========================================
-
-// Consultamos los conceptos y cantidades pendientes de 'GastosFijos'
-const { data: listaGastosPendientes } = await supabase
-  .from("GastosFijos")
-  .select("concepto, cantidad")
-  .eq("gastado", false);
-
-const gastosPendientes = listaGastosPendientes || [];
-
-// Sumamos el total por pagar de esta lista
-const totalPorPagar = gastosPendientes.reduce((acc, gf) => {
-  return acc + (Number(gf.cantidad) || 0);
-}, 0);
+const { patrimonioTotal, listaCuentasDesglose } = await getPatrimonioData();
+const { balanceTotalFinal, disponibleCompras } = await getBalanceData();
+const gastosPendientes = await getGastosPendientesData();
 ---
 
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Mi Economía</title>
+<MainLayout title="Mi Economía" activeTab="inicio">
+  
+  <!-- 1. TARJETA MORADA: Patrimonio Global -->
+  <a href="/carteras" class="block bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900 hover:border-purple-600/50 border border-purple-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition active:scale-[0.98]">
+    <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
 
-    <!-- Configuración PWA -->
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#090d16" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-  </head>
-  <body class="bg-[#090d16] text-slate-100 font-sans antialiased min-h-screen pb-28 select-none">
-    
-    <div class="max-w-md mx-auto px-4 pt-6 space-y-5">
-      
-      <!-- 1. Encabezado superior -->
-      <header class="flex justify-between items-center py-2">
-        <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Mi Economía</h1>
-          <p class="text-xs text-slate-400">Resumen financiero</p>
-        </div>
-        <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner">
-          ME
-        </div>
-      </header>
+    <div class="flex justify-between items-start mb-4">
+      <span class="text-xs font-semibold uppercase tracking-wider text-purple-400">Patrimonio Global</span>
+      <span class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium">
+        Carteras
+      </span>
+    </div>
 
-      <!-- 2. Barra de pestañas superiores -->
-      <nav class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-sm font-medium">
-        <button class="px-4 py-2 bg-slate-800 text-white rounded-full border border-slate-700/80 shrink-0 flex items-center gap-2 active:scale-95 transition">
-          <span>🏠</span> Inicio
-        </button>
-        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
-          <span>💼</span> Carteras
-        </button>
-        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
-          <span>🛒</span> Compras
-        </button>
-        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
-          <span>⚡</span> Servicios
-        </button>
-        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
-          <span>📈</span> Acumulados
-        </button>
-        <button class="px-4 py-2 bg-slate-900/60 text-slate-400 rounded-full border border-slate-800/80 shrink-0 flex items-center gap-2 hover:bg-slate-800/50 transition">
-          <span>📌</span> Otros
-        </button>
-      </nav>
+    <div class="mb-6">
+      <div class="text-4xl font-extrabold tracking-tight text-white mb-1">
+        {formatEuros(patrimonioTotal)}
+      </div>
+      <p class="text-xs text-slate-400">Total acumulado en tus cuentas activas</p>
+    </div>
 
-      <!-- 3. TARJETA PRINCIPAL (MORADA): Patrimonio Global y Estado de Cuentas -->
-      <a href="/cuentas" class="block bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900 hover:border-purple-600/50 border border-purple-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition active:scale-[0.98]">
-        <!-- Resplandor ambiental morado -->
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div class="flex justify-between items-start mb-4">
-          <span class="text-xs font-semibold uppercase tracking-wider text-purple-400">Patrimonio Global</span>
-          <span class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium">
-            Cuentas
-          </span>
-        </div>
-
-        <div class="mb-6">
-          <div class="text-4xl font-extrabold tracking-tight text-white mb-1">
-            {patrimonioTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-          </div>
-          <p class="text-xs text-slate-400">Total acumulado en tus cuentas activas</p>
-        </div>
-
-        <!-- Desglose independiente de cada cuenta -->
-        <div class="space-y-2.5 pt-4 border-t border-purple-900/40">
-          {listaCuentasDesglose.length > 0 ? (
-            listaCuentasDesglose.map((item) => (
-              <div class="flex justify-between items-center text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs">💳</span>
-                  <span class="text-slate-300 font-medium">{item.nombre}</span>
-                </div>
-                <span class="font-semibold text-slate-100">
-                  {item.saldo.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                </span>
-              </div>
-            ))
-          ) : (
-            <p class="text-xs text-slate-500">Sin cuentas registradas</p>
-          )}
-        </div>
-      </a>
-
-      <!-- 4. TARJETA SECUNDARIA (VERDE): Cuenta Gastos Modificado -->
-      <a href="/balance" class="block bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 hover:border-emerald-600/50 border border-emerald-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
-        <!-- Resplandor ambiental verde -->
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div class="flex justify-between items-start mb-4">
-          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Cuenta Gastos</span>
-          <span class="text-xs bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium">
-            Compras
-          </span>
-        </div>
-
-        <div class="mb-6">
-          <div class="text-3xl font-extrabold tracking-tight text-white mb-1">
-            {balanceTotalFinal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-          </div>
-          <p class="text-xs text-slate-400">Movimientos + Gastos fijos pendientes</p>
-        </div>
-
-        <!-- Indicador inferior: Cuánto queda para Compras -->
-        <div class="pt-4 border-t border-emerald-900/40 flex justify-between items-center text-sm">
-          <div class="flex items-center gap-2">
-            <span class="text-xs">🛒</span>
-            <span class="text-slate-300 font-medium">Restante para Compras</span>
-          </div>
-          <span class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
-            {disponibleCompras.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-          </span>
-        </div>
-      </a>
-
-      <a href="/gastos-fijos" class="block bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 hover:border-rose-600/50 border border-rose-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
-        <!-- Resplandor ambiental rojo -->
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/15 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div class="flex justify-between items-center mb-5">
-          <div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-rose-400 block mb-0.5">Gastos Fijos</span>
-            <p class="text-xs text-slate-400">Pendientes de cobro este mes</p>
-          </div>
-          <span class="text-xs bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-full border border-rose-500/30 font-semibold">
-            {gastosPendientes.length} {gastosPendientes.length === 1 ? 'pendiente' : 'pendientes'}
-          </span>
-        </div>
-
-        <!-- Lista limpia de gastos pendientes -->
-        <div class="space-y-3 pt-2 border-t border-rose-900/40">
-          {gastosPendientes.length > 0 ? (
-            gastosPendientes.map((item) => (
-              <div class="flex justify-between items-center text-sm py-0.5">
-                <div class="flex items-center gap-2.5">
-                  <span class="text-xs">📌</span>
-                  <span class="text-slate-200 font-medium">{item.concepto}</span>
-                </div>
-                <span class="font-semibold text-rose-400">
-                  -{Number(item.cantidad).toFixed(2)} €
-                </span>
-              </div>
-            ))
-          ) : (
-            <div class="flex items-center gap-2 py-2 text-xs text-emerald-400 font-medium">
-              <span>✅</span>
-              <span>¡Todo al día! No quedan gastos fijos pendientes</span>
+    <div class="space-y-2.5 pt-4 border-t border-purple-900/40">
+      {listaCuentasDesglose.length > 0 ? (
+        listaCuentasDesglose.map((item) => (
+          <div class="flex justify-between items-center text-sm">
+            <div class="flex items-center gap-2">
+              <span class="text-xs">💳</span>
+              <span class="text-slate-300 font-medium">{item.nombre}</span>
             </div>
-          )}
+            <span class="font-semibold text-slate-100">
+              {formatEuros(item.saldo)}
+            </span>
+          </div>
+        ))
+      ) : (
+        <p class="text-xs text-slate-500">Sin cuentas registradas</p>
+      )}
+    </div>
+  </a>
+
+  <!-- 2. TARJETA VERDE: Cuenta Gastos -->
+  <a href="/balance" class="block bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 hover:border-emerald-600/50 border border-emerald-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
+    <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+    <div class="flex justify-between items-start mb-4">
+      <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Cuenta Gastos</span>
+      <span class="text-xs bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium">
+        Compras
+      </span>
+    </div>
+
+    <div class="mb-6">
+      <div class="text-3xl font-extrabold tracking-tight text-white mb-1">
+        {formatEuros(balanceTotalFinal)}
+      </div>
+      <p class="text-xs text-slate-400">Movimientos + Gastos fijos pendientes</p>
+    </div>
+
+    <div class="pt-4 border-t border-emerald-900/40 flex justify-between items-center text-sm">
+      <div class="flex items-center gap-2">
+        <span class="text-xs">🛒</span>
+        <span class="text-slate-300 font-medium">Restante para Compras</span>
+      </div>
+      <span class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+        {formatEuros(disponibleCompras)}
+      </span>
+    </div>
+  </a>
+
+  <!-- 3. TARJETA ROJA: Gastos Fijos Pendientes -->
+  <a href="/gastos-fijos" class="block bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 hover:border-rose-600/50 border border-rose-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
+    <div class="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+    <div class="flex justify-between items-center mb-5">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-rose-400 block mb-0.5">Gastos Fijos</span>
+        <p class="text-xs text-slate-400">Pendientes de cobro este mes</p>
+      </div>
+      <span class="text-xs bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-full border border-rose-500/30 font-semibold">
+        {gastosPendientes.length} {gastosPendientes.length === 1 ? 'pendiente' : 'pendientes'}
+      </span>
+    </div>
+
+    <div class="space-y-3 pt-2 border-t border-rose-900/40">
+      {gastosPendientes.length > 0 ? (
+        gastosPendientes.map((item) => (
+          <div class="flex justify-between items-center text-sm py-0.5">
+            <div class="flex items-center gap-2.5">
+              <span class="text-xs">📌</span>
+              <span class="text-slate-200 font-medium">{item.concepto}</span>
+            </div>
+            <span class="font-semibold text-rose-400">
+              -{formatEuros(Number(item.cantidad))}
+            </span>
+          </div>
+        ))
+      ) : (
+        <div class="flex items-center gap-2 py-2 text-xs text-emerald-400 font-medium">
+          <span>✅</span>
+          <span>¡Todo al día! No quedan gastos fijos pendientes</span>
         </div>
-      </a>
-
+      )}
     </div>
+  </a>
 
-    <!-- 6. Barra de navegación inferior fija -->
-    <div class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-50">
-      <nav class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl">
-        <a href="/reinicio" class="flex flex-col items-center text-slate-400 hover:text-white transition">
-          <span class="text-lg">🔄</span>
-          <span class="text-[10px] font-medium mt-0.5">Reinicio</span>
-        </a>
-
-        <a href="/pago" class="flex flex-col items-center text-slate-400 hover:text-white transition">
-          <span class="text-lg">💳</span>
-          <span class="text-[10px] font-medium mt-0.5">Pago</span>
-        </a>
-
-        <button class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-6 shadow-lg shadow-emerald-500/30 active:scale-90 transition">
-          +
-        </button>
-
-        <a href="/actualizar" class="flex flex-col items-center text-slate-400 hover:text-white transition">
-          <span class="text-lg">🔁</span>
-          <span class="text-[10px] font-medium mt-0.5">Actualizar</span>
-        </a>
-
-        <a href="/ajustes" class="flex flex-col items-center text-slate-400 hover:text-white transition">
-          <span class="text-lg">⚙️</span>
-          <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
-        </a>
-      </nav>
-    </div>
-
-  </body>
-</html>
+</MainLayout>
