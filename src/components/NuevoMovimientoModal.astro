@@ -1,0 +1,240 @@
+---
+// src/components/NuevoMovimientoModal.astro
+const fechaHoy = new Date().toISOString().split("T")[0];
+
+// Mapeo de Categorías y sus Subcategorías
+const SUBCATEGORIAS_MAP: Record<string, string[]> = {
+  Transporte: ["Motos/bicis", "Transporte", "Gasolina", "Taller / Mantenimiento"],
+  Compras: ["Supermercado", "Ropa", "Hogar", "Tecnología"],
+  Servicios: ["Luz", "Agua", "Gas", "Internet"],
+  // Añade aquí más subcategorías según lo requiera tu app
+};
+
+const categorias = [
+  "Transporte",
+  "Luz",
+  "Seguros",
+  "Agua",
+  "Compras",
+  "Barberia",
+  "Comida",
+  "Ocio",
+  "Otros"
+];
+---
+
+<!-- BACKDROP DE NAVEGACIÓN -->
+<div 
+  id="modal-nuevo-movimiento" 
+  class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden"
+  style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+>
+  <!-- TARJETA MODAL -->
+  <div 
+    class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl relative animate-slide-up"
+    style="max-height: 90vh; overflow-y: auto;"
+  >
+    <!-- CABECERA -->
+    <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+      <div>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>💸</span> Nuevo Movimiento
+        </h3>
+        <p class="text-xs text-slate-400">Registrar un nuevo gasto o ingreso</p>
+      </div>
+      <button 
+        id="btn-cerrar-modal-mov" 
+        type="button" 
+        class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition-all text-lg font-bold"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- FORMULARIO -->
+    <form id="form-nuevo-movimiento" class="space-y-4">
+      
+      <!-- CATEGORÍA Y SUBCATEGORÍA -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Categoría</label>
+          <select 
+            id="select-categoria"
+            name="categoria_id" 
+            required 
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          >
+            <option value="" disabled selected>Seleccionar...</option>
+            {categorias.map(cat => <option value={cat}>{cat}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Subcategoría</label>
+          <select 
+            id="select-subcategoria"
+            name="subcategoria_id" 
+            disabled
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <option value="">Sin subcategoría</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TIPO Y FECHA -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Tipo</label>
+          <select 
+            id="select-tipo-mov" 
+            name="tipo" 
+            required
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          >
+            <option value="Gasto" selected>Gasto</option>
+            <option value="Ingreso">Ingreso</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Fecha</label>
+          <input 
+            type="date" 
+            name="fecha" 
+            value={fechaHoy} 
+            required 
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+        </div>
+      </div>
+
+      <!-- IMPORTE -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Importe (€)</label>
+        <input 
+          type="text" 
+          id="input-importe-mov" 
+          name="importe" 
+          placeholder="0.00" 
+          required 
+          inputmode="decimal"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
+        />
+      </div>
+
+      <!-- BOTÓN CONFIRMAR -->
+      <div class="pt-3">
+        <button 
+          type="submit" 
+          id="btn-guardar-mov"
+          class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-550 text-slate-950 font-bold py-3 rounded-xl shadow-lg shadow-emerald-950/50 transition-all active:scale-[0.98] text-sm"
+        >
+          Guardar Movimiento
+        </button>
+      </div>
+
+      <!-- MENSAJE DE ESTADO -->
+      <p id="msg-estado-mov" class="text-xs text-center hidden font-semibold"></p>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  import { insertRegistroMovimiento } from "../services/mutations";
+
+  const subcategoriasMap: Record<string, string[]> = {
+    Transporte: ["Motos/bicis", "Transporte", "Gasolina", "Taller / Mantenimiento"],
+    Compras: ["Supermercado", "Ropa", "Hogar", "Tecnología"],
+    Servicios: ["Luz", "Agua", "Gas", "Internet"],
+  };
+
+  const modal = document.getElementById("modal-nuevo-movimiento");
+  const btnCerrar = document.getElementById("btn-cerrar-modal-mov");
+  const form = document.getElementById("form-nuevo-movimiento") as HTMLFormElement;
+  const selectCategoria = document.getElementById("select-categoria") as HTMLSelectElement;
+  const selectSubcategoria = document.getElementById("select-subcategoria") as HTMLSelectElement;
+  const msgEstado = document.getElementById("msg-estado-mov");
+  const btnGuardar = document.getElementById("btn-guardar-mov") as HTMLButtonElement;
+
+  // Actualizar el selector de subcategorías según la categoría elegida
+  selectCategoria?.addEventListener("change", () => {
+    const categoria = selectCategoria.value;
+    const subcats = subcategoriasMap[categoria] || [];
+
+    // Limpiar desplegable
+    selectSubcategoria.innerHTML = '<option value="">Sin subcategoría</option>';
+
+    if (subcats.length > 0) {
+      subcats.forEach((sub) => {
+        const option = document.createElement("option");
+        option.value = sub;
+        option.textContent = sub;
+        selectSubcategoria.appendChild(option);
+      });
+      selectSubcategoria.disabled = false;
+    } else {
+      selectSubcategoria.disabled = true;
+    }
+  });
+
+  // Cerrar Modal
+  const cerrarModal = () => {
+    modal?.classList.add("hidden");
+    if (msgEstado) msgEstado.classList.add("hidden");
+  };
+
+  btnCerrar?.addEventListener("click", cerrarModal);
+
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) cerrarModal();
+  });
+
+  // Guardar Movimiento
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!btnGuardar || !msgEstado) return;
+
+    btnGuardar.disabled = true;
+    btnGuardar.innerText = "Guardando...";
+    msgEstado.classList.add("hidden");
+
+    try {
+      const formData = new FormData(form);
+
+      const rawImporte = String(formData.get("importe") || "0").replace(",", ".");
+      const importeParsed = parseFloat(rawImporte);
+
+      if (isNaN(importeParsed)) {
+        throw new Error("El importe ingresado no es válido.");
+      }
+
+      const subcat = formData.get("subcategoria_id") as string;
+
+      await insertRegistroMovimiento({
+        categoria_id: formData.get("categoria_id") as string,
+        subcategoria_id: subcat || null,
+        tipo: formData.get("tipo") as "Ingreso" | "Gasto",
+        fecha: formData.get("fecha") as string,
+        importe: importeParsed,
+      });
+
+      msgEstado.textContent = "✓ ¡Movimiento registrado con éxito!";
+      msgEstado.className = "text-xs text-center font-semibold text-emerald-400 block";
+
+      setTimeout(() => {
+        cerrarModal();
+        window.location.reload();
+      }, 750);
+
+    } catch (err: any) {
+      msgEstado.textContent = `❌ Error: ${err.message || "No se pudo guardar"}`;
+      msgEstado.className = "text-xs text-center font-semibold text-rose-400 block";
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.innerText = "Guardar Movimiento";
+    }
+  });
+</script>

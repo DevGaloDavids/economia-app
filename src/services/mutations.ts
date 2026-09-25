@@ -31,3 +31,24 @@ export async function insertRegistroCuenta(registro: NuevoRegistroCuenta) {
 
   return data;
 }
+
+export interface NuevoMovimiento {
+  categoria_id: string;
+  subcategoria_id?: string | null;
+  tipo: "Ingreso" | "Gasto";
+  fecha: string;
+  importe: number;
+}
+
+export async function insertRegistroMovimiento(movimiento: NuevoMovimiento) {
+  const { data, error } = await supabase
+    .from("Movimientos")
+    .insert([movimiento])
+    .select();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}
