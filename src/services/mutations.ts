@@ -6,7 +6,7 @@ export interface NuevoRegistroCuenta {
   importe: number;
   fecha: string;
   tipo: "Ingreso" | "Gasto";
-  conceptp?: string | null;
+  concepto?: string | null;
 }
 
 export async function insertRegistroCuenta(registro: NuevoRegistroCuenta) {
@@ -19,7 +19,7 @@ export async function insertRegistroCuenta(registro: NuevoRegistroCuenta) {
         importe: registro.importe,
         fecha: registro.fecha,
         tipo: registro.tipo,
-        conceptp: registro.conceptp || null,
+        concepto: registro.concepto || null,
       },
     ])
     .select();

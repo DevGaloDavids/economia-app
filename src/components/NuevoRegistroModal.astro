@@ -112,7 +112,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
         <input 
           type="text" 
           id="input-concepto"
-          name="conceptp" 
+          name="concepto" 
           placeholder="Ej: Pago subscripción, cena..." 
           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
         />
@@ -262,7 +262,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
         importe: importeParsed,
         fecha: formData.get("fecha") as string,
         tipo: tipoVal,
-        conceptp: tipoVal === "Gasto" ? (formData.get("conceptp") as string) : null,
+        concepto: tipoVal === "Gasto" ? (formData.get("concepto") as string) : null,
       });
 
       msgEstado.textContent = "✓ ¡Registro añadido con éxito!";
