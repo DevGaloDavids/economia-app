@@ -43,8 +43,8 @@ const fechaHoy = new Date().toISOString().split("T")[0];
           required 
           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
         >
-          <option value="RevolutCP">RevolutCP</option>
-          <option value="RevolutCR">RevolutCR</option>
+          <option value="Revolut C.P.">Revolut C.P.</option>
+          <option value="Revolut  C.R.">Revolut C.R.</option>
           <option value="Pulse">Pulse</option>
           <option value="Trade">Trade</option>
           <option value="Axa">Axa</option>
@@ -156,7 +156,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
   import { insertRegistroCuenta } from "../services/mutations";
 
   // Cuentas donde sólo se guarda el último saldo
-  const CUENTAS_ULTIMO_SALDO = ["RevolutCP", "RevolutCR", "Axa"];
+  const CUENTAS_ULTIMO_SALDO = ["Revolut C.P.", "Revolut C.R.", "Axa"];
 
   const modal = document.getElementById("modal-actualizar-cuenta");
   const btnCerrar = document.getElementById("btn-cerrar-modal");
