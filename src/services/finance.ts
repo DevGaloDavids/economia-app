@@ -1,24 +1,24 @@
 import { supabase } from "../lib/supabase";
 import { formatYearMonth, formatShortMonth } from "../utils/formatters";
 
-// CONFIGURACIONES
-const CUENTAS_ULTIMO_SALDO = ["RevolutCP", "RevolutCR", "Axa"];
-const ORDEN_CUENTAS = ["RevolutCP", "RevolutCR", "Pulse", "Trade", "Axa"];
+// CONFIGURACIONES FIJAS
+const CUENTAS_ULTIMO_SALDO = ["Revolut C.P.", "Revolut C.R.", "Axa"];
+const ORDEN_CUENTAS = ["Revolut C.P.", "Revolut C.R.", "Pulse", "Trade", "Axa"];
 
 // 1. Obtener patrimonio por cuentas
 export async function getPatrimonioData() {
   const { data: registrosCuentas } = await supabase
     .from("Cuentas")
-    .select("cuenta, importe, fecha, tipo")
+    .select("cuenta_id, importe, fecha, tipo")
     .order("fecha", { ascending: false });
 
   const cuentasData = registrosCuentas || [];
   const saldosPorCuenta: Record<string, number> = {};
 
   cuentasData.forEach((reg) => {
-    const nombreCuenta = reg.cuenta;
+    const nombreCuenta = reg.cuenta_id;
     const cantidad = Number(reg.importe) || 0;
-    const tipoLimpio = String(reg.tipo || "").trim().toLowerCase();
+    const tipo = reg.tipo;
 
     if (CUENTAS_ULTIMO_SALDO.includes(nombreCuenta)) {
       if (saldosPorCuenta[nombreCuenta] === undefined) {
@@ -29,7 +29,7 @@ export async function getPatrimonioData() {
         saldosPorCuenta[nombreCuenta] = 0;
       }
 
-      if (tipoLimpio === "ingreso") {
+      if (tipo === "Ingreso") {
         saldosPorCuenta[nombreCuenta] += cantidad;
       } else {
         saldosPorCuenta[nombreCuenta] -= cantidad;
@@ -57,14 +57,13 @@ export async function getPatrimonioData() {
 export async function getBalanceData() {
   const { data: movimientos } = await supabase
     .from("Movimientos")
-    .select("importe, tipo, categoria");
+    .select("importe, tipo, categoria_id");
 
   const listaMovimientos = movimientos || [];
 
   const balanceMovimientos = listaMovimientos.reduce((acc, mov) => {
     const cantidad = Number(mov.importe) || 0;
-    const tipoLimpio = String(mov.tipo || "").trim().toLowerCase();
-    return tipoLimpio === "ingreso" ? acc + cantidad : acc - cantidad;
+    return mov.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
   }, 0);
 
   const { data: gastosFijosPendientes } = await supabase
@@ -80,11 +79,10 @@ export async function getBalanceData() {
   const balanceTotalFinal = balanceMovimientos + totalGastosFijosPendientes;
 
   const disponibleCompras = listaMovimientos
-    .filter((mov) => String(mov.categoria || "").trim().toLowerCase() === "compras")
+    .filter((mov) => mov.categoria_id === "Compras")
     .reduce((acc, mov) => {
       const cantidad = Number(mov.importe) || 0;
-      const tipoLimpio = String(mov.tipo || "").trim().toLowerCase();
-      return tipoLimpio === "ingreso" ? acc + cantidad : acc - cantidad;
+      return mov.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
     }, 0);
 
   return { balanceTotalFinal, disponibleCompras };
@@ -94,19 +92,21 @@ export async function getBalanceData() {
 export async function getGastosPendientesData() {
   const { data: listaGastosPendientes } = await supabase
     .from("GastosFijos")
-    .select("concepto, cantidad")
+    .select("concepto_id, cantidad")
     .eq("gastado", false);
 
-  return listaGastosPendientes || [];
+  return (listaGastosPendientes || []).map((g) => ({
+    concepto: g.concepto_id,
+    cantidad: g.cantidad,
+  }));
 }
 
-// 5. Obtener los últimos 10 registros de cualquier cuenta
+// 4. Obtener los últimos 10 registros de cualquier cuenta
 export async function getTarjetaData(nombreCuenta: string) {
-  // 1. Obtenemos los registros ordenados por fecha de la cuenta
   const { data: registros } = await supabase
     .from("Cuentas")
     .select("importe, fecha, tipo")
-    .eq("cuenta", nombreCuenta)
+    .eq("cuenta_id", nombreCuenta)
     .order("fecha", { ascending: false });
 
   const lista = registros || [];
@@ -120,91 +120,64 @@ export async function getTarjetaData(nombreCuenta: string) {
   let historial10: { importe: number; fecha: string }[] = [];
 
   if (esUltimoSaldo) {
-    // A) Para RevolutCP, RevolutCR y Axa:
-    // El saldo actual es simplemente el importe del registro más reciente (el primero del array descendente)
     saldoActual = Number(lista[0].importe) || 0;
 
-    // Para la gráfica tomamos los últimos 10 registros y los ordenamos cronológicamente
-    historial10 = lista.slice(0, 10).reverse().map(reg => ({
+    historial10 = lista.slice(0, 10).reverse().map((reg) => ({
       importe: Number(reg.importe) || 0,
-      fecha: reg.fecha
+      fecha: reg.fecha,
     }));
-
   } else {
-    // B) Para Pulse y Trade (Suma/Resta de ingresos y gastos):
-    // Calculamos el saldo acumulado total acumulando de más antiguo a más reciente
     const cronologico = [...lista].reverse();
     let saldoAcumulado = 0;
 
-    // Calculamos el historial evolutivo del saldo tras cada movimiento
     const historialEvolucion = cronologico.map((reg) => {
       const cantidad = Number(reg.importe) || 0;
-      const tipoLimpio = String(reg.tipo || '').trim().toLowerCase();
 
-      if (tipoLimpio === "ingreso") {
+      if (reg.tipo === "Ingreso") {
         saldoAcumulado += cantidad;
       } else {
         saldoAcumulado -= cantidad;
       }
 
       return {
-        importe: saldoAcumulado, // Guardamos el saldo resultante en ese momento para pintar la línea
-        fecha: reg.fecha
+        importe: saldoAcumulado,
+        fecha: reg.fecha,
       };
     });
 
-    // El saldo actual será la suma acumulada total
     saldoActual = saldoAcumulado;
-
-    // Tomamos los últimos 10 puntos de la evolución acumulada para la gráfica
     historial10 = historialEvolucion.slice(-10);
   }
 
   return { saldoActual, historial10 };
 }
 
-// 6. Obtener datos para la tarjeta principal de Compras (Restante + Últimos 5 movimientos)
+// 5. Obtener datos para la tarjeta principal de Compras
 export async function getComprasData() {
-  const { data: movimientos } = await supabase
+  const { data: movsCompras } = await supabase
     .from("Movimientos")
     .select("*")
+    .eq("categoria_id", "Compras")
     .order("fecha", { ascending: false });
 
-  const todos = movimientos || [];
+  const todos = movsCompras || [];
 
-  // Filtrado que revisa CUALQUIER campo (categoria, subcategoria, cartera, concepto)
-  const movsCompras = todos.filter((m) => {
-    const cat = String(m.categoria || "").trim().toLowerCase();
-    const subcat = String(m.subcategoria || "").trim().toLowerCase();
-    const cartera = String(m.cartera || "").trim().toLowerCase();
-    const concepto = String(m.concepto || "").trim().toLowerCase();
-
-    return (
-      cat.includes("compra") || cat.includes("casa") ||
-      subcat.includes("compra") || subcat.includes("casa") ||
-      cartera.includes("compra") || cartera.includes("casa") ||
-      concepto.includes("compra") || concepto.includes("casa")
-    );
-  });
-
-  // Calcular el restante disponible (Ingresos - Gastos)
-  const restanteCompras = movsCompras.reduce((acc, m) => {
+  const restanteCompras = todos.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
   }, 0);
 
-  const ultimos5 = movsCompras.slice(0, 5);
+  const ultimos5 = todos.slice(0, 5);
 
   return { restanteCompras, ultimos5 };
 }
 
-// 7. Obtener datos para la tarjeta de Transporte (Restante + Desglose por subcategorías)
+// 6. Obtener datos para la tarjeta de Transporte (Desglose por subcategorías exactas)
 export async function getTransporteData() {
   const { data: movimientos } = await supabase
     .from("Movimientos")
-    .select("importe, tipo, subcategoria, categoria")
-    .filter("categoria", "ilike", "transporte");
+    .select("importe, tipo, subcategoria_id")
+    .eq("categoria_id", "Transporte");
 
   const movs = movimientos || [];
 
@@ -218,24 +191,22 @@ export async function getTransporteData() {
 
   const restanteTransporte = movs.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-    const subcat = String(m.subcategoria || "").trim().toLowerCase();
+    const subcat = m.subcategoria_id;
 
-    if (tipo === "ingreso") {
+    if (m.tipo === "Ingreso") {
       return acc + cantidad;
     } else {
       totalGastos += cantidad;
-      // Asignar al grupo correspondiente según la subcategoría
-      if (subcat.includes("gasolina")) desgloseGastos.gasolina += cantidad;
-      else if (subcat.includes("moto") || subcat.includes("bici")) desgloseGastos.motos_bicis += cantidad;
-      else if (subcat.includes("limp")) desgloseGastos.limpiezas += cantidad;
+
+      if (subcat === "Gasolina") desgloseGastos.gasolina += cantidad;
+      else if (subcat === "Bici/moto" || subcat === "Motos/bicis") desgloseGastos.motos_bicis += cantidad;
+      else if (subcat === "Limpieza/aire") desgloseGastos.limpiezas += cantidad;
       else desgloseGastos.transporte += cantidad;
 
       return acc - cantidad;
     }
   }, 0);
 
-  // Calcular porcentajes sobre el total gastado
   const porcentajes = {
     gasolina: totalGastos > 0 ? Math.round((desgloseGastos.gasolina / totalGastos) * 100) : 0,
     transporte: totalGastos > 0 ? Math.round((desgloseGastos.transporte / totalGastos) * 100) : 0,
@@ -246,51 +217,38 @@ export async function getTransporteData() {
   return { restanteTransporte, porcentajes };
 }
 
-// 8. Obtener datos para la tarjeta de Barbería (Restante)
+// 7. Obtener datos para la tarjeta de Barbería
 export async function getBarberiaData() {
   const { data: movimientos } = await supabase
     .from("Movimientos")
-    .select("importe, tipo, categoria")
-    .filter("categoria", "ilike", "barberia");
+    .select("importe, tipo")
+    .eq("categoria_id", "Barberia");
 
   const movs = movimientos || [];
 
   const restanteBarberia = movs.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
   }, 0);
 
   return { restanteBarberia };
 }
 
-// 7. Función genérica para obtener saldo e histórico de 6 meses por categoría
+// 8. Función genérica para servicios con gráfico de 6 meses (Luz, Agua, etc.)
 async function getServicioData(nombreCategoria: string) {
   const { data: movimientos } = await supabase
     .from("Movimientos")
     .select("*")
+    .eq("categoria_id", nombreCategoria)
     .order("fecha", { ascending: false });
 
-  const todos = movimientos || [];
+  const movs = movimientos || [];
 
-  // Filtrado flexible
-  const movs = todos.filter((m) => {
-    const cat = String(m.categoria || "").trim().toLowerCase();
-    const subcat = String(m.subcategoria || "").trim().toLowerCase();
-    const concepto = String(m.concepto || "").trim().toLowerCase();
-    const objetivo = nombreCategoria.toLowerCase();
-
-    return cat.includes(objetivo) || subcat.includes(objetivo) || concepto.includes(objetivo);
-  });
-
-  // Saldo global restante (Ingresos - Gastos)
   const restante = movs.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
   }, 0);
 
-  // Generar la estructura de los últimos 6 meses
   const now = new Date();
   const ultimos6Meses: { key: string; label: string; gasto: number }[] = [];
 
@@ -303,19 +261,14 @@ async function getServicioData(nombreCategoria: string) {
     });
   }
 
-  // Agrupar los gastos por mes leyendo la fecha de forma ultra segura
   movs.forEach((m) => {
     if (!m.fecha) return;
 
-    // Extraer año y mes directamente del texto si viene "AAAA-MM-DD" para evitar fallos de UTC/Timezone
     const fechaStr = String(m.fecha);
     const match = fechaStr.match(/^(\d{4})-(\d{2})/);
     const key = match ? `${match[1]}-${match[2]}` : formatYearMonth(new Date(m.fecha));
 
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-
-    // Solo contabilizar egresos / gastos
-    if (tipo !== "ingreso") {
+    if (m.tipo !== "Ingreso") {
       const mesObj = ultimos6Meses.find((item) => item.key === key);
       if (mesObj) {
         mesObj.gasto += Number(m.importe) || 0;
@@ -323,7 +276,6 @@ async function getServicioData(nombreCategoria: string) {
     }
   });
 
-  // Re-calcular el máximo gastado para la escala
   const maxGasto = Math.max(...ultimos6Meses.map((m) => m.gasto), 1);
 
   const historiaGrafica = ultimos6Meses.map((m) => ({
@@ -335,55 +287,38 @@ async function getServicioData(nombreCategoria: string) {
   return { restante, historiaGrafica };
 }
 
-// 7. Datos específicos para Luz
+// 9. Datos específicos para Luz
 export async function getLuzData() {
-  return await getServicioData("luz");
+  return await getServicioData("Luz");
 }
 
-// 8. Datos específicos para Agua
+// 10. Datos específicos para Agua
 export async function getAguaData() {
-  return await getServicioData("agua");
+  return await getServicioData("Agua");
 }
 
-// Auxiliar para obtener el saldo (Ingresos - Gastos) de una categoría o búsqueda libre
+// 11. Auxiliar para obtener el saldo (Ingresos - Gastos) de cualquier categoría exacta
 export async function getAcumuladoData(nombreCategoria: string) {
   const { data: movimientos } = await supabase
     .from("Movimientos")
-    .select("*")
-    .order("fecha", { ascending: false });
+    .select("importe, tipo")
+    .eq("categoria_id", nombreCategoria);
 
-  const todos = movimientos || [];
-
-  const movs = todos.filter((m) => {
-    const cat = String(m.categoria || "").trim().toLowerCase();
-    const subcat = String(m.subcategoria || "").trim().toLowerCase();
-    const cartera = String(m.cartera || "").trim().toLowerCase();
-    const concepto = String(m.concepto || "").trim().toLowerCase();
-    const objetivo = nombreCategoria.toLowerCase();
-
-    return (
-      cat.includes(objetivo) ||
-      subcat.includes(objetivo) ||
-      cartera.includes(objetivo) ||
-      concepto.includes(objetivo)
-    );
-  });
+  const movs = movimientos || [];
 
   const restante = movs.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    const tipo = String(m.tipo || "").trim().toLowerCase();
-    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
   }, 0);
 
   return { restante };
 }
 
-// 10. Obtener estado de Gastos Fijos reales desde Supabase
+// 12. Obtener estado de Gastos Fijos reales desde Supabase
 export async function getGastosFijosData() {
-  // Cambia "GastosFijos" por el nombre exacto de esta tabla en tu Supabase si es distinto
   const { data: gastosFijos, error } = await supabase
     .from("GastosFijos")
-    .select("concepto, cantidad, gastado, clase");
+    .select("concepto_id, cantidad, gastado, clase");
 
   if (error) {
     console.error("Error al obtener gastos fijos:", error);
@@ -391,15 +326,13 @@ export async function getGastosFijosData() {
 
   const lista = gastosFijos || [];
 
-  // Mapeamos directamente con las columnas reales de tu captura
   const estadoGastosFijos = lista.map((g) => ({
-    concepto: String(g.concepto || ""),
+    concepto: String(g.concepto_id || ""),
     importeReal: Number(g.cantidad) || 0,
-    pagado: Boolean(g.gastado), // Toma directamente el TRUE / FALSE de la BBDD
+    pagado: Boolean(g.gastado),
     categoria: String(g.clase || "Otros"),
   }));
 
-  // Cálculos de totales con los números exactos
   const totalEstimado = estadoGastosFijos.reduce((acc, g) => acc + g.importeReal, 0);
   const totalPagado = estadoGastosFijos.filter((g) => g.pagado).reduce((acc, g) => acc + g.importeReal, 0);
   const pendiente = totalEstimado - totalPagado;
