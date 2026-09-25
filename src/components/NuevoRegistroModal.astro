@@ -38,6 +38,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
       <div>
         <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Cuenta</label>
         <select 
+          id="select-cuenta"
           name="cuenta_id" 
           required 
           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
@@ -55,8 +56,9 @@ const fechaHoy = new Date().toISOString().split("T")[0];
         <div>
           <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Origen</label>
           <select 
+            id="select-origen"
             name="origen" 
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="Personal" selected>Personal</option>
             <option value="Comisiones">Comisiones</option>
@@ -69,7 +71,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
           <select 
             id="select-tipo" 
             name="tipo" 
-            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="Ingreso" selected>Ingreso</option>
             <option value="Gasto">Gasto</option>
@@ -153,17 +155,56 @@ const fechaHoy = new Date().toISOString().split("T")[0];
 <script>
   import { insertRegistroCuenta } from "../services/mutations";
 
+  // Cuentas donde sólo se guarda el último saldo
+  const CUENTAS_ULTIMO_SALDO = ["RevolutCP", "RevolutCR", "Axa"];
+
   const modal = document.getElementById("modal-actualizar-cuenta");
   const btnCerrar = document.getElementById("btn-cerrar-modal");
   const form = document.getElementById("form-registro-cuenta") as HTMLFormElement;
+  const selectCuenta = document.getElementById("select-cuenta") as HTMLSelectElement;
+  const selectOrigen = document.getElementById("select-origen") as HTMLSelectElement;
   const selectTipo = document.getElementById("select-tipo") as HTMLSelectElement;
   const contenedorConcepto = document.getElementById("contenedor-concepto");
   const inputConcepto = document.getElementById("input-concepto") as HTMLInputElement;
-  const inputImporte = document.getElementById("input-importe") as HTMLInputElement;
   const msgEstado = document.getElementById("msg-estado");
   const btnGuardar = document.getElementById("btn-guardar") as HTMLButtonElement;
 
-  // Toggle visibilidad del campo Concepto
+  // Lógica de deshabilitación/habilitación según la cuenta seleccionada
+  const actualizarReglasCuenta = () => {
+    if (!selectCuenta || !selectOrigen || !selectTipo) return;
+
+    const esUltimoSaldo = CUENTAS_ULTIMO_SALDO.includes(selectCuenta.value);
+
+    if (esUltimoSaldo) {
+      // Bloquear Origen a "Personal"
+      selectOrigen.value = "Personal";
+      selectOrigen.disabled = true;
+
+      // Bloquear Tipo a "Ingreso"
+      selectTipo.value = "Ingreso";
+      selectTipo.disabled = true;
+
+      // Ocultar y limpiar concepto si estaba abierto
+      contenedorConcepto?.classList.add("hidden");
+      inputConcepto.value = "";
+    } else {
+      // Permitir elegir libremente
+      selectOrigen.disabled = false;
+      selectTipo.disabled = false;
+
+      // Re-evaluar visibilidad del concepto según el tipo seleccionado
+      if (selectTipo.value === "Gasto") {
+        contenedorConcepto?.classList.remove("hidden");
+      } else {
+        contenedorConcepto?.classList.add("hidden");
+      }
+    }
+  };
+
+  // Evento al cambiar de cuenta
+  selectCuenta?.addEventListener("change", actualizarReglasCuenta);
+
+  // Toggle visibilidad del campo Concepto al cambiar el tipo
   selectTipo?.addEventListener("change", () => {
     if (selectTipo.value === "Gasto") {
       contenedorConcepto?.classList.remove("hidden");
@@ -172,6 +213,9 @@ const fechaHoy = new Date().toISOString().split("T")[0];
       inputConcepto.value = "";
     }
   });
+
+  // Ejecutar verificación inicial al cargar
+  actualizarReglasCuenta();
 
   // Cerrar Modal
   const cerrarModal = () => {
@@ -207,11 +251,14 @@ const fechaHoy = new Date().toISOString().split("T")[0];
         throw new Error("El importe ingresado no es un número válido.");
       }
 
-      const tipoVal = formData.get("tipo") as "Ingreso" | "Gasto";
+      // Al estar deshabilitados en el HTML, los elementos disabled no se incluyen automáticamente en FormData,
+      // por lo que los leemos directamente de la propiedad .value del elemento para garantizar el dato exacto:
+      const origenVal = selectOrigen.disabled ? selectOrigen.value : (formData.get("origen") as string);
+      const tipoVal = (selectTipo.disabled ? selectTipo.value : formData.get("tipo")) as "Ingreso" | "Gasto";
 
       await insertRegistroCuenta({
         cuenta_id: formData.get("cuenta_id") as string,
-        origen: formData.get("origen") as string,
+        origen: origenVal,
         importe: importeParsed,
         fecha: formData.get("fecha") as string,
         tipo: tipoVal,
@@ -221,7 +268,6 @@ const fechaHoy = new Date().toISOString().split("T")[0];
       msgEstado.textContent = "✓ ¡Registro añadido con éxito!";
       msgEstado.className = "text-xs text-center font-semibold text-emerald-400 block";
       
-      // Limpiar y recargar suavemente para reflejar los saldos
       setTimeout(() => {
         cerrarModal();
         window.location.reload();
