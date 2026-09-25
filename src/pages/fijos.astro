@@ -10,6 +10,9 @@ const { estadoGastosFijos, totalEstimado, totalPagado, pendiente } = await getGa
 
 // Evitar división por cero en la barra de porcentaje
 const porcentajePagado = totalEstimado > 0 ? Math.round((totalPagado / totalEstimado) * 100) : 0;
+
+// Ordenar: primero los no pagados (pagado === false) y al final los pagados (pagado === true)
+const gastosOrdenados = estadoGastosFijos ? [...estadoGastosFijos].sort((a, b) => Number(a.pagado) - Number(b.pagado)) : [];
 ---
 
 <MainLayout title="Gastos Fijos - Mi Economía" activeTab="otros">
@@ -50,10 +53,10 @@ const porcentajePagado = totalEstimado > 0 ? Math.round((totalPagado / totalEsti
         <div style={`width: ${porcentajePagado}%; background: linear-gradient(to right, #dc2626, #ef4444); height: 100%; border-radius: 9999px; transition: width 0.3s ease;`}></div>
       </div>
 
-      <!-- LISTA DE GASTOS REALES -->
+      <!-- LISTA DE GASTOS REALES ORDENADOS -->
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        {estadoGastosFijos && estadoGastosFijos.length > 0 ? (
-          estadoGastosFijos.map((gasto) => (
+        {gastosOrdenados && gastosOrdenados.length > 0 ? (
+          gastosOrdenados.map((gasto) => (
             <div style={`display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px solid ${gasto.pagado ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; background: ${gasto.pagado ? 'rgba(20, 83, 45, 0.2)' : 'rgba(127, 29, 29, 0.15)'};`}>
               
               <div style="display: flex; align-items: center; gap: 10px;">
@@ -77,8 +80,7 @@ const porcentajePagado = totalEstimado > 0 ? Math.round((totalPagado / totalEsti
                   <button 
                     type="button" 
                     class="btn-pagar"
-                    data-concepto={gasto.concepto}
-                    data-importe={gasto.importeReal}
+                    data-concepto-id={gasto.concepto}
                     style="background: #dc2626; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;"
                   >
                     Pagar
@@ -109,15 +111,36 @@ const porcentajePagado = totalEstimado > 0 ? Math.round((totalPagado / totalEsti
     .btn-pagar:active {
       transform: scale(0.95);
     }
+    .btn-pagar:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
   </style>
 
   <script>
+    import { marcarGastoFijoComoPagado } from '../services/mutations';
+
     document.querySelectorAll('.btn-pagar').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         const target = e.currentTarget as HTMLButtonElement;
-        const concepto = target.dataset.concepto;
-        const importe = target.dataset.importe;
-        alert(`Próximamente: Cambiar estado a gastado=TRUE para ${concepto} (${importe}€)`);
+        const conceptoId = target.dataset.conceptoId;
+
+        if (!conceptoId) return;
+
+        const textoOriginal = target.innerText;
+        target.innerText = '...';
+        target.disabled = true;
+
+        try {
+          await marcarGastoFijoComoPagado(conceptoId, true);
+          window.location.reload();
+        } catch (error: any) {
+          console.error('Error al pagar:', error);
+          alert(`Error al marcar como pagado ${conceptoId}: ${error.message || 'Inténtalo de nuevo'}`);
+          target.innerText = textoOriginal;
+          target.disabled = false;
+        }
       });
     });
   </script>

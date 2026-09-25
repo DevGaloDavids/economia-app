@@ -10,7 +10,7 @@ const OBJETIVO_SEGUROS = 396;
 const OBJETIVO_LENTILLAS = 48;
 
 // Carga de saldos actuales desde BBDD
-const { restante: restanteSeguros } = await getAcumuladoData("seguro");
+const { restante: restanteSeguros } = await getAcumuladoData("Seguros");
 const { restante: restanteLentillas } = await getAcumuladoData("lentilla");
 
 // Cálculos de porcentaje de progreso

@@ -52,3 +52,17 @@ export async function insertRegistroMovimiento(movimiento: NuevoMovimiento) {
 
   return data;
 }
+
+export async function marcarGastoFijoComoPagado(conceptoId: string, gastado: boolean = true) {
+  const { data, error } = await supabase
+    .from("GastosFijos")
+    .update({ gastado })
+    .eq("concepto_id", conceptoId)
+    .select();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
+}

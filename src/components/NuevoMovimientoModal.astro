@@ -2,24 +2,14 @@
 // src/components/NuevoMovimientoModal.astro
 const fechaHoy = new Date().toISOString().split("T")[0];
 
-// Mapeo de Categorías y sus Subcategorías
-const SUBCATEGORIAS_MAP: Record<string, string[]> = {
-  Transporte: ["Motos/bicis", "Transporte", "Gasolina", "Taller / Mantenimiento"],
-  Compras: ["Supermercado", "Ropa", "Hogar", "Tecnología"],
-  Servicios: ["Luz", "Agua", "Gas", "Internet"],
-  // Añade aquí más subcategorías según lo requiera tu app
-};
-
 const categorias = [
-  "Transporte",
-  "Luz",
-  "Seguros",
-  "Agua",
   "Compras",
+  "Transporte",
   "Barberia",
-  "Comida",
-  "Ocio",
-  "Otros"
+  "Luz",
+  "Agua",
+  "Seguros",
+  "Lentillas",
 ];
 ---
 
@@ -145,9 +135,8 @@ const categorias = [
   import { insertRegistroMovimiento } from "../services/mutations";
 
   const subcategoriasMap: Record<string, string[]> = {
-    Transporte: ["Motos/bicis", "Transporte", "Gasolina", "Taller / Mantenimiento"],
-    Compras: ["Supermercado", "Ropa", "Hogar", "Tecnología"],
-    Servicios: ["Luz", "Agua", "Gas", "Internet"],
+    Compras: ["Supermercado", "Hogar", "Ropa"],
+    Transporte: ["Gasolina", "Motos/bicis", "Transporte", "Limpieza"],
   };
 
   const modal = document.getElementById("modal-nuevo-movimiento");
