@@ -339,3 +339,35 @@ export async function getGastosFijosData() {
 
   return { estadoGastosFijos, totalEstimado, totalPagado, pendiente };
 }
+
+export async function getLimpiezaData() {
+  try {
+    // 1. Obtener la suma del presupuesto/ingresos y de los gastos para 'Limpieza'
+    // (Asegúrate de ajustar el nombre de la categoría o el ID según tu base de datos)
+    const { data, error } = await supabase
+      .from('movimientos')
+      .select('importe, tipo')
+      .eq('categoria', 'Limpieza'); // O usa .eq('categoria_id', ID_LIMPIEZA)
+
+    if (error) throw error;
+
+    let totalIngresos = 0;
+    let totalGastos = 0;
+
+    data?.forEach((m) => {
+      const imp = Number(m.importe) || 0;
+      if (String(m.tipo).toLowerCase().trim() === 'ingreso') {
+        totalIngresos += imp;
+      } else {
+        totalGastos += imp;
+      }
+    });
+
+    const restanteLimpieza = totalIngresos - totalGastos;
+
+    return { restanteLimpieza };
+  } catch (err) {
+    console.error("Error cargando datos de Limpieza:", err);
+    return { restanteLimpieza: 0 };
+  }
+}

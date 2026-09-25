@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import { getComprasData, getTransporteData, getBarberiaData } from '../services/finance';
+import { getComprasData, getTransporteData, getBarberiaData, getLimpiezaData } from '../services/finance';
 import { formatEuros } from '../utils/formatters';
 
 export const prerender = false;
@@ -9,6 +9,7 @@ export const prerender = false;
 const { restanteCompras, ultimos5 } = await getComprasData();
 const { restanteTransporte, porcentajes } = await getTransporteData();
 const { restanteBarberia } = await getBarberiaData();
+const { restanteLimpieza } = await getLimpiezaData();
 ---
 
 <MainLayout title="Compras - Mi Economía" activeTab="compras">
@@ -59,7 +60,7 @@ const { restanteBarberia } = await getBarberiaData();
       </div>
     </div>
 
-    <!-- 2. GRID FORZADO EN 2 COLUMNAS -->
+    <!-- 2. GRID EN 2 COLUMNAS PARA LAS TARJETAS PEQUEÑAS -->
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
 
       <!-- TARJETA PEQUEÑA 1: Transporte (Naranja) -->
@@ -125,6 +126,35 @@ const { restanteBarberia } = await getBarberiaData();
           </div>
           <p style="font-size: 9px; color: #94a3b8; margin: 3px 0 0 0; line-height: 1.2;">
             Llevar metálico antes de ir.
+          </p>
+        </div>
+      </div>
+
+      <!-- TARJETA PEQUEÑA 3: Limpieza (Amarillo / Ámbar) -->
+      <div style="background: linear-gradient(to bottom right, rgba(120, 53, 15, 0.4), #0f172a, #0f172a); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 1.25rem; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+            <span style="font-size: 13px;">🧹</span>
+            <span style="font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: #fbbf24; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Limpieza
+            </span>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <div style={`font-size: 18px; font-weight: 800; ${restanteLimpieza >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}>
+              {formatEuros(restanteLimpieza)}
+            </div>
+            <p style="font-size: 9px; color: #94a3b8; margin: 0;">Restante</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(245, 158, 11, 0.2);">
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: #fbbf24;">
+            <span>⚠️</span>
+            <span>Aviso</span>
+          </div>
+          <p style="font-size: 9px; color: #cbd5e1; margin: 3px 0 0 0; line-height: 1.2;">
+            Sacar antes del último martes de mes.
           </p>
         </div>
       </div>
