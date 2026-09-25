@@ -1,0 +1,238 @@
+---
+// src/components/NuevoRegistroCuentaModal.astro
+const fechaHoy = new Date().toISOString().split("T")[0];
+---
+
+<!-- CONTENEDOR PRINCIPAL / BACKDROP -->
+<div 
+  id="modal-actualizar-cuenta" 
+  class="fixed inset-0 z-50 flex items-end sm:items-center justify-center hidden"
+  style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+>
+  <!-- TARJETA MODAL / BOCADILLO -->
+  <div 
+    class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl relative animate-slide-up"
+    style="max-height: 90vh; overflow-y: auto;"
+  >
+    <!-- CABECERA Y BOTÓN CERRAR -->
+    <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+      <div>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>💳</span> Nuevo Saldo / Movimiento
+        </h3>
+        <p class="text-xs text-slate-400">Actualizar registros de la tabla Cuentas</p>
+      </div>
+      <button 
+        id="btn-cerrar-modal" 
+        type="button" 
+        class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition-all text-lg font-bold"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- FORMULARIO -->
+    <form id="form-registro-cuenta" class="space-y-4">
+      
+      <!-- CUENTA -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Cuenta</label>
+        <select 
+          name="cuenta_id" 
+          required 
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+        >
+          <option value="RevolutCP">RevolutCP</option>
+          <option value="RevolutCR">RevolutCR</option>
+          <option value="Pulse">Pulse</option>
+          <option value="Trade">Trade</option>
+          <option value="Axa">Axa</option>
+        </select>
+      </div>
+
+      <!-- ORIGEN Y TIPO -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Origen</label>
+          <select 
+            name="origen" 
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+          >
+            <option value="Personal" selected>Personal</option>
+            <option value="Comisiones">Comisiones</option>
+            <option value="Intereses">Intereses</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Tipo</label>
+          <select 
+            id="select-tipo" 
+            name="tipo" 
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+          >
+            <option value="Ingreso" selected>Ingreso</option>
+            <option value="Gasto">Gasto</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- IMPORTE Y FECHA -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Importe (€)</label>
+          <input 
+            type="text" 
+            id="input-importe" 
+            name="importe" 
+            placeholder="0.00" 
+            required 
+            inputmode="decimal"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors font-mono"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Fecha</label>
+          <input 
+            type="date" 
+            name="fecha" 
+            value={fechaHoy} 
+            required 
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+          />
+        </div>
+      </div>
+
+      <!-- CONCEPTO (Solo si es Gasto) -->
+      <div id="contenedor-concepto" class="hidden">
+        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Concepto</label>
+        <input 
+          type="text" 
+          id="input-concepto"
+          name="conceptp" 
+          placeholder="Ej: Pago subscripción, cena..." 
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
+        />
+      </div>
+
+      <!-- BOTÓN CONFIRMAR -->
+      <div class="pt-3">
+        <button 
+          type="submit" 
+          id="btn-guardar"
+          class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-550 text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-950/50 transition-all active:scale-[0.98] text-sm"
+        >
+          Confirmar y Guardar
+        </button>
+      </div>
+
+      <!-- MENSAJE DE ESTADO -->
+      <p id="msg-estado" class="text-xs text-center hidden font-semibold"></p>
+
+    </form>
+  </div>
+</div>
+
+<style>
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .animate-slide-up {
+    animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+</style>
+
+<script>
+  import { insertRegistroCuenta } from "../services/mutations";
+
+  const modal = document.getElementById("modal-actualizar-cuenta");
+  const btnCerrar = document.getElementById("btn-cerrar-modal");
+  const form = document.getElementById("form-registro-cuenta") as HTMLFormElement;
+  const selectTipo = document.getElementById("select-tipo") as HTMLSelectElement;
+  const contenedorConcepto = document.getElementById("contenedor-concepto");
+  const inputConcepto = document.getElementById("input-concepto") as HTMLInputElement;
+  const inputImporte = document.getElementById("input-importe") as HTMLInputElement;
+  const msgEstado = document.getElementById("msg-estado");
+  const btnGuardar = document.getElementById("btn-guardar") as HTMLButtonElement;
+
+  // Toggle visibilidad del campo Concepto
+  selectTipo?.addEventListener("change", () => {
+    if (selectTipo.value === "Gasto") {
+      contenedorConcepto?.classList.remove("hidden");
+    } else {
+      contenedorConcepto?.classList.add("hidden");
+      inputConcepto.value = "";
+    }
+  });
+
+  // Cerrar Modal
+  const cerrarModal = () => {
+    modal?.classList.add("hidden");
+    if (msgEstado) msgEstado.classList.add("hidden");
+  };
+
+  btnCerrar?.addEventListener("click", cerrarModal);
+
+  // Cerrar si se pulsa fuera de la tarjeta
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) cerrarModal();
+  });
+
+  // Manejo del Submit
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!btnGuardar || !msgEstado) return;
+
+    btnGuardar.disabled = true;
+    btnGuardar.innerText = "Guardando...";
+    msgEstado.classList.add("hidden");
+
+    try {
+      const formData = new FormData(form);
+      
+      // Normalizar número: Reemplazar coma por punto para float seguro
+      const rawImporte = String(formData.get("importe") || "0").replace(",", ".");
+      const importeParsed = parseFloat(rawImporte);
+
+      if (isNaN(importeParsed)) {
+        throw new Error("El importe ingresado no es un número válido.");
+      }
+
+      const tipoVal = formData.get("tipo") as "Ingreso" | "Gasto";
+
+      await insertRegistroCuenta({
+        cuenta_id: formData.get("cuenta_id") as string,
+        origen: formData.get("origen") as string,
+        importe: importeParsed,
+        fecha: formData.get("fecha") as string,
+        tipo: tipoVal,
+        conceptp: tipoVal === "Gasto" ? (formData.get("conceptp") as string) : null,
+      });
+
+      msgEstado.textContent = "✓ ¡Registro añadido con éxito!";
+      msgEstado.className = "text-xs text-center font-semibold text-emerald-400 block";
+      
+      // Limpiar y recargar suavemente para reflejar los saldos
+      setTimeout(() => {
+        cerrarModal();
+        window.location.reload();
+      }, 750);
+
+    } catch (err: any) {
+      msgEstado.textContent = `❌ Error: ${err.message || "No se pudo guardar"}`;
+      msgEstado.className = "text-xs text-center font-semibold text-rose-400 block";
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.innerText = "Confirmar y Guardar";
+    }
+  });
+</script>

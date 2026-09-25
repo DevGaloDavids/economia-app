@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import NuevoRegistroModal from '../components/NuevoRegistroModal.astro';
 
 interface Props {
   title?: string;
@@ -88,10 +89,11 @@ const tabs = [
           +
         </button>
 
-        <a href="/actualizar" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+        <!-- BOTÓN ACTUALIZAR: Abre el modal sin recargar página -->
+        <button id="btn-nav-actualizar" type="button" class="flex flex-col items-center text-slate-400 hover:text-white transition">
           <span class="text-lg">🔁</span>
           <span class="text-[10px] font-medium mt-0.5">Actualizar</span>
-        </a>
+        </button>
 
         <a href="/ajustes" class="flex flex-col items-center text-slate-400 hover:text-white transition">
           <span class="text-lg">⚙️</span>
@@ -99,6 +101,17 @@ const tabs = [
         </a>
       </nav>
     </div>
+
+    <!-- MODAL INCLUIDO -->
+    <NuevoRegistroModal />
+
+    <script>
+      // Evento para desplegar el modal desde el botón de la barra inferior
+      document.getElementById("btn-nav-actualizar")?.addEventListener("click", () => {
+        const modal = document.getElementById("modal-actualizar-cuenta");
+        modal?.classList.remove("hidden");
+      });
+    </script>
 
   </body>
 </html>
