@@ -2,12 +2,12 @@
 import "../styles/global.css";
 import NuevoRegistroModal from "../components/NuevoRegistroModal.astro";
 import NuevoMovimientoModal from "../components/NuevoMovimientoModal.astro";
-import ModalReparto from '../components/ModalReparto.astro';
+import ModalReparto from "../components/ModalReparto.astro";
 
 interface Props {
   title?: string;
   activeTab:
-    | "inicio" | "carteras" | "compras" | "servicios" | "acumulados" | "otros";
+    "inicio" | "carteras" | "compras" | "servicios" | "acumulados" | "otros";
 }
 
 const { title = "Mi Economía", activeTab } = Astro.props;
@@ -84,9 +84,9 @@ const tabs = [
     </div>
 
     <!-- Barra inferior -->
-    <div class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-50">
+    <div class="fixed bottom-4 left-0 right-0 px-4 z-50 flex justify-center">
       <nav
-        class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl"
+        class="w-72 bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2 px-6 flex justify-between items-center shadow-2xl"
       >
         <!-- BOTÓN REPARTO -->
         <button
@@ -98,19 +98,11 @@ const tabs = [
           <span class="text-[10px] font-medium mt-0.5">Reparto</span>
         </button>
 
-        <a
-          href="/carteras"
-          class={`flex flex-col items-center transition ${activeTab === "carteras" ? "text-purple-400 font-semibold" : "text-slate-400 hover:text-white"}`}
-        >
-          <span class="text-lg">💼</span>
-          <span class="text-[10px] font-medium mt-0.5">Carteras</span>
-        </a>
-
         <!-- BOTÓN + CENTRAL (NUEVO MOVIMIENTO) -->
         <button
           id="btn-nav-mas"
           type="button"
-          class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-6 shadow-lg shadow-emerald-500/30 active:scale-90 transition"
+          class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-5 shadow-lg shadow-emerald-500/30 active:scale-90 transition shrink-0"
         >
           +
         </button>
@@ -119,19 +111,11 @@ const tabs = [
         <button
           id="btn-nav-actualizar"
           type="button"
-          class="flex flex-col items-center text-slate-400 hover:text-white transition"
+          class="flex flex-col items-center text-slate-400 hover:text-white transition active:scale-95"
         >
           <span class="text-lg">🔁</span>
           <span class="text-[10px] font-medium mt-0.5">Actualizar</span>
         </button>
-
-        <a
-          href="/ajustes"
-          class="flex flex-col items-center text-slate-400 hover:text-white transition"
-        >
-          <span class="text-lg">⚙️</span>
-          <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
-        </a>
       </nav>
     </div>
 
@@ -147,7 +131,9 @@ const tabs = [
         const btnActualizar = document.getElementById("btn-nav-actualizar");
         const btnReparto = document.getElementById("btn-nav-reinicio");
 
-        const modalMovimiento = document.getElementById("modal-nuevo-movimiento");
+        const modalMovimiento = document.getElementById(
+          "modal-nuevo-movimiento",
+        );
         const modalCuenta = document.getElementById("modal-actualizar-cuenta");
         const modalReparto = document.getElementById("modal-reparto"); // Verifica que este id coincida en ModalReparto
 
