@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { formatYearMonth, formatShortMonth } from "../utils/formatters";
 
 // CONFIGURACIONES
 const CUENTAS_ULTIMO_SALDO = ["RevolutCP", "RevolutCR", "Axa"];
@@ -261,4 +262,147 @@ export async function getBarberiaData() {
   }, 0);
 
   return { restanteBarberia };
+}
+
+// 7. Función genérica para obtener saldo e histórico de 6 meses por categoría
+async function getServicioData(nombreCategoria: string) {
+  const { data: movimientos } = await supabase
+    .from("Movimientos")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  const todos = movimientos || [];
+
+  // Filtrado flexible
+  const movs = todos.filter((m) => {
+    const cat = String(m.categoria || "").trim().toLowerCase();
+    const subcat = String(m.subcategoria || "").trim().toLowerCase();
+    const concepto = String(m.concepto || "").trim().toLowerCase();
+    const objetivo = nombreCategoria.toLowerCase();
+
+    return cat.includes(objetivo) || subcat.includes(objetivo) || concepto.includes(objetivo);
+  });
+
+  // Saldo global restante (Ingresos - Gastos)
+  const restante = movs.reduce((acc, m) => {
+    const cantidad = Number(m.importe) || 0;
+    const tipo = String(m.tipo || "").trim().toLowerCase();
+    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+  }, 0);
+
+  // Generar la estructura de los últimos 6 meses
+  const now = new Date();
+  const ultimos6Meses: { key: string; label: string; gasto: number }[] = [];
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    ultimos6Meses.push({
+      key: formatYearMonth(d),
+      label: formatShortMonth(d),
+      gasto: 0,
+    });
+  }
+
+  // Agrupar los gastos por mes leyendo la fecha de forma ultra segura
+  movs.forEach((m) => {
+    if (!m.fecha) return;
+
+    // Extraer año y mes directamente del texto si viene "AAAA-MM-DD" para evitar fallos de UTC/Timezone
+    const fechaStr = String(m.fecha);
+    const match = fechaStr.match(/^(\d{4})-(\d{2})/);
+    const key = match ? `${match[1]}-${match[2]}` : formatYearMonth(new Date(m.fecha));
+
+    const tipo = String(m.tipo || "").trim().toLowerCase();
+
+    // Solo contabilizar egresos / gastos
+    if (tipo !== "ingreso") {
+      const mesObj = ultimos6Meses.find((item) => item.key === key);
+      if (mesObj) {
+        mesObj.gasto += Number(m.importe) || 0;
+      }
+    }
+  });
+
+  // Re-calcular el máximo gastado para la escala
+  const maxGasto = Math.max(...ultimos6Meses.map((m) => m.gasto), 1);
+
+  const historiaGrafica = ultimos6Meses.map((m) => ({
+    label: m.label,
+    gasto: m.gasto,
+    porcentajeAltura: Math.round((m.gasto / maxGasto) * 100),
+  }));
+
+  return { restante, historiaGrafica };
+}
+
+// 7. Datos específicos para Luz
+export async function getLuzData() {
+  return await getServicioData("luz");
+}
+
+// 8. Datos específicos para Agua
+export async function getAguaData() {
+  return await getServicioData("agua");
+}
+
+// Auxiliar para obtener el saldo (Ingresos - Gastos) de una categoría o búsqueda libre
+export async function getAcumuladoData(nombreCategoria: string) {
+  const { data: movimientos } = await supabase
+    .from("Movimientos")
+    .select("*")
+    .order("fecha", { ascending: false });
+
+  const todos = movimientos || [];
+
+  const movs = todos.filter((m) => {
+    const cat = String(m.categoria || "").trim().toLowerCase();
+    const subcat = String(m.subcategoria || "").trim().toLowerCase();
+    const cartera = String(m.cartera || "").trim().toLowerCase();
+    const concepto = String(m.concepto || "").trim().toLowerCase();
+    const objetivo = nombreCategoria.toLowerCase();
+
+    return (
+      cat.includes(objetivo) ||
+      subcat.includes(objetivo) ||
+      cartera.includes(objetivo) ||
+      concepto.includes(objetivo)
+    );
+  });
+
+  const restante = movs.reduce((acc, m) => {
+    const cantidad = Number(m.importe) || 0;
+    const tipo = String(m.tipo || "").trim().toLowerCase();
+    return tipo === "ingreso" ? acc + cantidad : acc - cantidad;
+  }, 0);
+
+  return { restante };
+}
+
+// 10. Obtener estado de Gastos Fijos reales desde Supabase
+export async function getGastosFijosData() {
+  // Cambia "GastosFijos" por el nombre exacto de esta tabla en tu Supabase si es distinto
+  const { data: gastosFijos, error } = await supabase
+    .from("GastosFijos")
+    .select("concepto, cantidad, gastado, clase");
+
+  if (error) {
+    console.error("Error al obtener gastos fijos:", error);
+  }
+
+  const lista = gastosFijos || [];
+
+  // Mapeamos directamente con las columnas reales de tu captura
+  const estadoGastosFijos = lista.map((g) => ({
+    concepto: String(g.concepto || ""),
+    importeReal: Number(g.cantidad) || 0,
+    pagado: Boolean(g.gastado), // Toma directamente el TRUE / FALSE de la BBDD
+    categoria: String(g.clase || "Otros"),
+  }));
+
+  // Cálculos de totales con los números exactos
+  const totalEstimado = estadoGastosFijos.reduce((acc, g) => acc + g.importeReal, 0);
+  const totalPagado = estadoGastosFijos.filter((g) => g.pagado).reduce((acc, g) => acc + g.importeReal, 0);
+  const pendiente = totalEstimado - totalPagado;
+
+  return { estadoGastosFijos, totalEstimado, totalPagado, pendiente };
 }
