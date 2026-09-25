@@ -1,29 +1,34 @@
 ---
-import '../styles/global.css';
-import NuevoRegistroModal from '../components/NuevoRegistroModal.astro';
-import NuevoMovimientoModal from '../components/NuevoMovimientoModal.astro';
+import "../styles/global.css";
+import NuevoRegistroModal from "../components/NuevoRegistroModal.astro";
+import NuevoMovimientoModal from "../components/NuevoMovimientoModal.astro";
+import ModalReparto from '../components/ModalReparto.astro';
 
 interface Props {
   title?: string;
-  activeTab: 'inicio' | 'carteras' | 'compras' | 'servicios' | 'acumulados' | 'otros';
+  activeTab:
+    "inicio" | "carteras" | "compras" | "servicios" | "acumulados" | "otros";
 }
 
 const { title = "Mi Economía", activeTab } = Astro.props;
 
 const tabs = [
-  { id: 'inicio', label: 'Inicio', icon: '🏠', href: '/' },
-  { id: 'carteras', label: 'Carteras', icon: '💼', href: '/carteras' },
-  { id: 'compras', label: 'Compras', icon: '🛒', href: '/compras' },
-  { id: 'servicios', label: 'Servicios', icon: '⚡', href: '/servicios' },
-  { id: 'acumulados', label: 'Acumulados', icon: '📈', href: '/acumulados' },
-  { id: 'otros', label: 'Fijos', icon: '📌', href: '/fijos' },
+  { id: "inicio", label: "Inicio", icon: "🏠", href: "/" },
+  { id: "carteras", label: "Carteras", icon: "💼", href: "/carteras" },
+  { id: "compras", label: "Compras", icon: "🛒", href: "/compras" },
+  { id: "servicios", label: "Servicios", icon: "⚡", href: "/servicios" },
+  { id: "acumulados", label: "Acumulados", icon: "📈", href: "/acumulados" },
+  { id: "otros", label: "Fijos", icon: "📌", href: "/fijos" },
 ];
 ---
 
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <title>{title}</title>
 
     <link rel="manifest" href="/manifest.json" />
@@ -31,71 +36,99 @@ const tabs = [
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
   </head>
-  <body class="bg-[#090d16] text-slate-100 font-sans antialiased min-h-screen pb-28 select-none">
-    
+  <body
+    class="bg-[#090d16] text-slate-100 font-sans antialiased min-h-screen pb-28 select-none"
+  >
     <div class="max-w-md mx-auto px-4 pt-6 space-y-5">
-      
       <!-- Encabezado -->
       <header class="flex justify-between items-center py-2">
         <div>
-          <h1 class="text-2xl font-bold tracking-tight text-white">Mi Economía</h1>
+          <h1 class="text-2xl font-bold tracking-tight text-white">
+            Mi Economía
+          </h1>
           <p class="text-xs text-slate-400">Resumen financiero</p>
         </div>
-        <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner">
+        <div
+          class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner"
+        >
           ME
         </div>
       </header>
 
       <!-- Barra superior -->
-      <nav class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-sm font-medium">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          return (
-            <a
-              href={tab.href}
-              class={`px-4 py-2 rounded-full border shrink-0 flex items-center gap-2 transition active:scale-95 ${
-                isActive
-                  ? "bg-slate-800 text-white border-slate-700/80 shadow-sm"
-                  : "bg-slate-900/60 text-slate-400 border-slate-800/80 hover:bg-slate-800/50"
-              }`}
-            >
-              <span>{tab.icon}</span> {tab.label}
-            </a>
-          );
-        })}
+      <nav
+        class="flex gap-2 overflow-x-auto no-scrollbar py-1 text-sm font-medium"
+      >
+        {
+          tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <a
+                href={tab.href}
+                class={`px-4 py-2 rounded-full border shrink-0 flex items-center gap-2 transition active:scale-95 ${
+                  isActive
+                    ? "bg-slate-800 text-white border-slate-700/80 shadow-sm"
+                    : "bg-slate-900/60 text-slate-400 border-slate-800/80 hover:bg-slate-800/50"
+                }`}
+              >
+                <span>{tab.icon}</span> {tab.label}
+              </a>
+            );
+          })
+        }
       </nav>
 
       <main class="space-y-5">
         <slot />
       </main>
-
     </div>
 
     <!-- Barra inferior -->
     <div class="fixed bottom-4 left-0 right-0 max-w-md mx-auto px-4 z-50">
-      <nav class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl">
-        <a href="/" class={`flex flex-col items-center transition ${activeTab === 'inicio' ? 'text-emerald-400 font-semibold' : 'text-slate-400 hover:text-white'}`}>
-          <span class="text-lg">🏠</span>
-          <span class="text-[10px] font-medium mt-0.5">Inicio</span>
-        </a>
+      <nav
+        class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl"
+      >
+        <!-- NUEVO BOTÓN REINICIO / REPARTO -->
+        <button
+          id="btn-nav-reinicio"
+          type="button"
+          class="flex flex-col items-center text-slate-400 hover:text-emerald-400 transition active:scale-95"
+        >
+          <span class="text-lg">🔄</span>
+          <span class="text-[10px] font-medium mt-0.5">Reparto</span>
+        </button>
 
-        <a href="/carteras" class={`flex flex-col items-center transition ${activeTab === 'carteras' ? 'text-purple-400 font-semibold' : 'text-slate-400 hover:text-white'}`}>
+        <a
+          href="/carteras"
+          class={`flex flex-col items-center transition ${activeTab === "carteras" ? "text-purple-400 font-semibold" : "text-slate-400 hover:text-white"}`}
+        >
           <span class="text-lg">💼</span>
           <span class="text-[10px] font-medium mt-0.5">Carteras</span>
         </a>
 
-        <!-- BOTÓN + CENTRAL: Abre modal de Movimientos -->
-        <button id="btn-nav-mas" type="button" class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-6 shadow-lg shadow-emerald-500/30 active:scale-90 transition">
+        <!-- BOTÓN + CENTRAL -->
+        <button
+          id="btn-nav-mas"
+          type="button"
+          class="w-12 h-12 rounded-full bg-emerald-500 text-slate-950 font-bold text-xl flex items-center justify-center -mt-6 shadow-lg shadow-emerald-500/30 active:scale-90 transition"
+        >
           +
         </button>
 
-        <!-- BOTÓN ACTUALIZAR: Abre modal de Cuentas -->
-        <button id="btn-nav-actualizar" type="button" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+        <!-- BOTÓN ACTUALIZAR -->
+        <button
+          id="btn-nav-actualizar"
+          type="button"
+          class="flex flex-col items-center text-slate-400 hover:text-white transition"
+        >
           <span class="text-lg">🔁</span>
           <span class="text-[10px] font-medium mt-0.5">Actualizar</span>
         </button>
 
-        <a href="/ajustes" class="flex flex-col items-center text-slate-400 hover:text-white transition">
+        <a
+          href="/ajustes"
+          class="flex flex-col items-center text-slate-400 hover:text-white transition"
+        >
           <span class="text-lg">⚙️</span>
           <span class="text-[10px] font-medium mt-0.5">Ajustes</span>
         </a>
@@ -105,18 +138,24 @@ const tabs = [
     <!-- MODALES INCLUIDOS -->
     <NuevoRegistroModal />
     <NuevoMovimientoModal />
+    <ModalReparto />
 
     <script>
       // Listener Botón Actualizar (Cuentas)
-      document.getElementById("btn-nav-actualizar")?.addEventListener("click", () => {
-        document.getElementById("modal-actualizar-cuenta")?.classList.remove("hidden");
-      });
+      document
+        .getElementById("btn-nav-actualizar")
+        ?.addEventListener("click", () => {
+          document
+            .getElementById("modal-actualizar-cuenta")
+            ?.classList.remove("hidden");
+        });
 
       // Listener Botón + (Movimientos)
       document.getElementById("btn-nav-mas")?.addEventListener("click", () => {
-        document.getElementById("modal-nuevo-movimiento")?.classList.remove("hidden");
+        document
+          .getElementById("modal-nuevo-movimiento")
+          ?.classList.remove("hidden");
       });
     </script>
-
   </body>
 </html>

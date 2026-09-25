@@ -1,0 +1,310 @@
+<div id="modal-reinicio" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl relative max-h-[90vh] overflow-y-auto">
+    
+    <!-- CABECERA -->
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <span>🔄</span> Reparto de Nómina
+        </h3>
+        <p class="text-xs text-slate-400">Calcula la distribución de tu sueldo</p>
+      </div>
+      <button id="btn-cerrar-reinicio" type="button" class="text-slate-400 hover:text-white text-xl">✕</button>
+    </div>
+
+    <!-- PASO 1: FORMULARIO -->
+    <form id="form-reinicio" class="space-y-4">
+      
+      <!-- Nómina -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Nómina (€)</label>
+        <input 
+          type="number" 
+          id="input-nomina" 
+          step="0.01" 
+          placeholder="Ej: 2360" 
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500 text-sm"
+          required 
+        />
+      </div>
+
+      <!-- Ahorro -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="text-xs font-semibold text-slate-300">Ahorro (€)</label>
+          <span id="rec-ahorro" class="text-[10px] text-emerald-400 font-mono font-bold">Rec: 0.00 €</span>
+        </div>
+        <input 
+          type="number" 
+          id="input-ahorro" 
+          step="0.01" 
+          placeholder="Monto a ahorrar" 
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-500 text-sm"
+        />
+      </div>
+
+      <!-- Suma Gastos Fijos + Variables -->
+      <div class="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-300">Total Gastos Variables + Fijos:</span>
+          <span id="label-total-gastos-fijos" class="text-sm font-extrabold text-rose-400 font-mono">Cargando...</span>
+        </div>
+      </div>
+
+      <!-- GASTOS VARIABLES -->
+      <div class="space-y-2 pt-2 border-t border-slate-800">
+        <p class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Gastos Variables Mes</p>
+        
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-slate-400 text-[10px]">Compras</label>
+            <input type="number" id="gasto-compras" value="250" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Luz</label>
+            <input type="number" id="gasto-luz" value="60" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Agua</label>
+            <input type="number" id="gasto-agua" value="13" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Transporte</label>
+            <input type="number" id="gasto-transporte" value="30" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Seguros</label>
+            <input type="number" id="gasto-seguros" value="33" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Lentillas</label>
+            <input type="number" id="gasto-lentillas" value="16" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Limpieza</label>
+            <input type="number" id="gasto-limpieza" value="80" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+          <div>
+            <label class="text-slate-400 text-[10px]">Barbería</label>
+            <input type="number" id="gasto-barberia" value="40" class="input-gasto w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-white font-mono" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-500/20 active:scale-95 text-sm">
+        Calcular Reparto 🚀
+      </button>
+    </form>
+
+    <!-- PASO 2: RESULTADO DE TRANSFERENCIAS -->
+    <div id="paso-resultado" class="hidden space-y-4">
+      <div class="bg-slate-950 border border-emerald-500/30 rounded-2xl p-4 space-y-3">
+        <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">💸 Transferencias a Realizar</p>
+        
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between items-center">
+            <span class="text-slate-300">➡️ A <b>Compras</b>:</span>
+            <span id="res-compras" class="font-bold text-white font-mono">0.00 €</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-300">➡️ A <b>Trade</b>:</span>
+            <span id="res-trade" class="font-bold text-purple-400 font-mono">0.00 €</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-slate-300">💳 Se queda en <b>Revolut</b>:</span>
+            <span id="res-revolut" class="font-bold text-cyan-400 font-mono">0.00 €</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex justify-between items-center font-bold">
+          <span class="text-xs text-slate-400">TOTAL NÓMINA:</span>
+          <span id="res-total" class="text-emerald-400 font-mono">0.00 €</span>
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btn-volver-form" type="button" class="w-1/2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">
+          Modificar
+        </button>
+        <button id="btn-confirmar-reparto" type="button" class="w-1/2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition">
+          Aceptar
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let gastosFijosTotal = 0;
+
+  async function obtenerGastosFijos() {
+    try {
+      const res = await fetch('/api/gastos-fijos');
+      const data = await res.json();
+      gastosFijosTotal = Number(data.totalFijos) || 0;
+    } catch (err) {
+      console.error("Error al obtener gastos fijos desde la API:", err);
+      gastosFijosTotal = 0;
+    }
+    calcularTotalGastos();
+  }
+
+  function calcularTotalGastos() {
+    const inputsGastos = document.querySelectorAll(".input-gasto") as NodeListOf<HTMLInputElement>;
+    const labelTotalGastosFijos = document.getElementById("label-total-gastos-fijos");
+    let sumaVariables = 0;
+    
+    inputsGastos.forEach((input) => {
+      sumaVariables += parseFloat(input.value) || 0;
+    });
+
+    const total = sumaVariables + gastosFijosTotal;
+    if (labelTotalGastosFijos) {
+      labelTotalGastosFijos.textContent = `${total.toFixed(2)} €`;
+    }
+    return total;
+  }
+
+  function actualizarRecomendacionAhorro() {
+    const inputNomina = document.getElementById("input-nomina") as HTMLInputElement;
+    const inputAhorro = document.getElementById("input-ahorro") as HTMLInputElement;
+    const recAhorro = document.getElementById("rec-ahorro") as HTMLElement;
+
+    if (!inputNomina) return;
+    const nomina = parseFloat(inputNomina.value) || 0;
+    
+    if (nomina > 0) {
+      const ahorroTotal20 = (nomina + 150) * 0.20;
+      const recomendacionTrade = ahorroTotal20 - 100;
+
+      if (recAhorro) {
+        recAhorro.textContent = `Rec (20%): ${recomendacionTrade.toFixed(2)} €`;
+      }
+      if (inputAhorro) {
+        inputAhorro.placeholder = recomendacionTrade.toFixed(2);
+      }
+    } else {
+      if (recAhorro) {
+        recAhorro.textContent = "Rec: 0.00 €";
+      }
+      if (inputAhorro) {
+        inputAhorro.placeholder = "Monto a ahorrar";
+      }
+    }
+  }
+
+  function initModalReparto() {
+    const modalReinicio = document.getElementById("modal-reinicio");
+    const btnAbrirReinicio = document.getElementById("btn-nav-reinicio");
+    const btnCerrarReinicio = document.getElementById("btn-cerrar-reinicio");
+
+    const inputNomina = document.getElementById("input-nomina") as HTMLInputElement;
+    const inputAhorro = document.getElementById("input-ahorro") as HTMLInputElement;
+    const formReinicio = document.getElementById("form-reinicio");
+    const pasoResultado = document.getElementById("paso-resultado");
+    const btnVolverForm = document.getElementById("btn-volver-form");
+    const btnConfirmarReparto = document.getElementById("btn-confirmar-reparto") as HTMLButtonElement;
+
+    let datosCalculados = {
+      ahorroTrade: 0,
+      seQuedaRevolut: 0,
+      gastosVariables: {}
+    };
+
+    btnAbrirReinicio?.addEventListener("click", () => {
+      modalReinicio?.classList.remove("hidden");
+      obtenerGastosFijos();
+    });
+
+    btnCerrarReinicio?.addEventListener("click", () => {
+      modalReinicio?.classList.add("hidden");
+    });
+
+    inputNomina?.addEventListener("input", actualizarRecomendacionAhorro);
+    inputNomina?.addEventListener("keyup", actualizarRecomendacionAhorro);
+
+    document.querySelectorAll(".input-gasto").forEach(input => {
+      input.addEventListener("input", calcularTotalGastos);
+    });
+
+    // Carga inicial al cargar el script
+    obtenerGastosFijos();
+    actualizarRecomendacionAhorro();
+
+    formReinicio?.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const nomina = parseFloat(inputNomina.value) || 0;
+      const ahorroTotal20 = (nomina + 150) * 0.20;
+      const recomendacionTrade = ahorroTotal20 - 100;
+      
+      const ahorro = inputAhorro.value ? parseFloat(inputAhorro.value) : recomendacionTrade;
+      const totalGastos = calcularTotalGastos();
+
+      const aCompras = totalGastos;
+      const aTrade = ahorro;
+      const seQuedaRevolut = nomina - (aCompras + aTrade);
+      const totalSuma = aCompras + aTrade + seQuedaRevolut;
+
+      datosCalculados = {
+        ahorroTrade: aTrade,
+        seQuedaRevolut: seQuedaRevolut,
+        gastosVariables: {
+          compras: parseFloat((document.getElementById("gasto-compras") as HTMLInputElement)?.value) || 0,
+          luz: parseFloat((document.getElementById("gasto-luz") as HTMLInputElement)?.value) || 0,
+          agua: parseFloat((document.getElementById("gasto-agua") as HTMLInputElement)?.value) || 0,
+          transporte: parseFloat((document.getElementById("gasto-transporte") as HTMLInputElement)?.value) || 0,
+          seguros: parseFloat((document.getElementById("gasto-seguros") as HTMLInputElement)?.value) || 0,
+          lentillas: parseFloat((document.getElementById("gasto-lentillas") as HTMLInputElement)?.value) || 0,
+          limpieza: parseFloat((document.getElementById("gasto-limpieza") as HTMLInputElement)?.value) || 0,
+          barberia: parseFloat((document.getElementById("gasto-barberia") as HTMLInputElement)?.value) || 0,
+        }
+      };
+
+      document.getElementById("res-compras")!.textContent = `${aCompras.toFixed(2)} €`;
+      document.getElementById("res-trade")!.textContent = `${aTrade.toFixed(2)} €`;
+      document.getElementById("res-revolut")!.textContent = `${seQuedaRevolut.toFixed(2)} €`;
+      document.getElementById("res-total")!.textContent = `${totalSuma.toFixed(2)} €`;
+
+      formReinicio?.classList.add("hidden");
+      pasoResultado?.classList.remove("hidden");
+    });
+
+    btnVolverForm?.addEventListener("click", () => {
+      pasoResultado?.classList.add("hidden");
+      formReinicio?.classList.remove("hidden");
+    });
+
+    btnConfirmarReparto?.addEventListener("click", async () => {
+      btnConfirmarReparto.textContent = "Guardando...";
+      btnConfirmarReparto.disabled = true;
+
+      try {
+        const res = await fetch("/api/reparto-nomina", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(datosCalculados)
+        });
+
+        const respuesta = await res.json();
+
+        if (respuesta.success) {
+          window.location.reload();
+        } else {
+          alert("Error al procesar el reparto: " + respuesta.error);
+          btnConfirmarReparto.textContent = "Aceptar";
+          btnConfirmarReparto.disabled = false;
+        }
+      } catch (err) {
+        alert("Error de conexión con el servidor");
+        btnConfirmarReparto.textContent = "Aceptar";
+        btnConfirmarReparto.disabled = false;
+      }
+    });
+  }
+
+  initModalReparto();
+  document.addEventListener("DOMContentLoaded", initModalReparto);
+  document.addEventListener("astro:page-load", initModalReparto);
+</script>

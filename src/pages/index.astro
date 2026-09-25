@@ -1,7 +1,11 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
-import { getPatrimonioData, getBalanceData, getGastosPendientesData } from '../services/finance';
-import { formatEuros } from '../utils/formatters';
+import MainLayout from "../layouts/MainLayout.astro";
+import {
+  getPatrimonioData,
+  getBalanceData,
+  getGastosPendientesData,
+} from "../services/finance";
+import { formatEuros } from "../utils/formatters";
 
 export const prerender = false;
 
@@ -11,51 +15,100 @@ const gastosPendientes = await getGastosPendientesData();
 ---
 
 <MainLayout title="Mi Economía" activeTab="inicio">
-  
   <!-- 1. TARJETA MORADA: Patrimonio Global -->
-  <a href="/carteras" class="block bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900 hover:border-purple-600/50 border border-purple-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition active:scale-[0.98]">
-    <div class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"></div>
-
-    <div class="flex justify-between items-start mb-4">
-      <span class="text-xs font-semibold uppercase tracking-wider text-purple-400">Patrimonio Global</span>
-      <span class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium">
-        Carteras
-      </span>
+  <a
+    href="/carteras"
+    class="block bg-gradient-to-br from-purple-950/40 via-slate-900 to-slate-900 hover:border-purple-600/50 border border-purple-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden transition active:scale-[0.98]"
+  >
+    <div
+      class="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/15 rounded-full blur-2xl pointer-events-none"
+    >
     </div>
 
+    <!-- CABECERA TARJETA -->
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <span
+          class="text-xs font-semibold uppercase tracking-wider text-purple-400"
+          >Patrimonio Global</span
+        >
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- BOTÓN PRIVACIDAD (OJITO) -->
+        <button
+          id="btn-privacidad"
+          type="button"
+          title="Ocultar/Mostrar valores"
+          class="w-7 h-7 rounded-full bg-purple-950/60 hover:bg-purple-900/80 border border-purple-700/50 flex items-center justify-center text-xs transition active:scale-90"
+        >
+          <span id="icono-privacidad">👁️</span>
+        </button>
+
+        <span
+          class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium"
+        >
+          Carteras
+        </span>
+      </div>
+    </div>
+
+    <!-- IMPORTE PRINCIPAL -->
     <div class="mb-6">
-      <div class="text-4xl font-extrabold tracking-tight text-white mb-1">
+      <div
+        class="monto-privado text-4xl font-extrabold tracking-tight text-white mb-1 font-mono"
+        data-valor={formatEuros(patrimonioTotal)}
+      >
         {formatEuros(patrimonioTotal)}
       </div>
-      <p class="text-xs text-slate-400">Total acumulado en tus cuentas activas</p>
+      <p class="text-xs text-slate-400">
+        Total acumulado en tus cuentas activas
+      </p>
     </div>
 
+    <!-- DESGLOSE DE CUENTAS -->
     <div class="space-y-2.5 pt-4 border-t border-purple-900/40">
-      {listaCuentasDesglose.length > 0 ? (
-        listaCuentasDesglose.map((item) => (
-          <div class="flex justify-between items-center text-sm">
-            <div class="flex items-center gap-2">
-              <span class="text-xs">💳</span>
-              <span class="text-slate-300 font-medium">{item.nombre}</span>
+      {
+        listaCuentasDesglose.length > 0 ? (
+          listaCuentasDesglose.map((item) => (
+            <div class="flex justify-between items-center text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-xs">💳</span>
+                <span class="text-slate-300 font-medium">{item.nombre}</span>
+              </div>
+              <span
+                class="monto-privado font-semibold text-slate-100 font-mono"
+                data-valor={formatEuros(item.saldo)}
+              >
+                {formatEuros(item.saldo)}
+              </span>
             </div>
-            <span class="font-semibold text-slate-100">
-              {formatEuros(item.saldo)}
-            </span>
-          </div>
-        ))
-      ) : (
-        <p class="text-xs text-slate-500">Sin cuentas registradas</p>
-      )}
+          ))
+        ) : (
+          <p class="text-xs text-slate-500">Sin cuentas registradas</p>
+        )
+      }
     </div>
   </a>
 
   <!-- 2. TARJETA VERDE: Cuenta Gastos -->
-  <a href="/balance" class="block bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 hover:border-emerald-600/50 border border-emerald-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
-    <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
+  <a
+    href="/balance"
+    class="block bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 hover:border-emerald-600/50 border border-emerald-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]"
+  >
+    <div
+      class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"
+    >
+    </div>
 
     <div class="flex justify-between items-start mb-4">
-      <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Cuenta Gastos</span>
-      <span class="text-xs bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium">
+      <span
+        class="text-xs font-semibold uppercase tracking-wider text-emerald-400"
+        >Cuenta Gastos</span
+      >
+      <span
+        class="text-xs bg-emerald-500/15 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium"
+      >
         Compras
       </span>
     </div>
@@ -64,54 +117,113 @@ const gastosPendientes = await getGastosPendientesData();
       <div class="text-3xl font-extrabold tracking-tight text-white mb-1">
         {formatEuros(balanceTotalFinal)}
       </div>
-      <p class="text-xs text-slate-400">Movimientos + Gastos fijos pendientes</p>
+      <p class="text-xs text-slate-400">
+        Movimientos + Gastos fijos pendientes
+      </p>
     </div>
 
-    <div class="pt-4 border-t border-emerald-900/40 flex justify-between items-center text-sm">
+    <div
+      class="pt-4 border-t border-emerald-900/40 flex justify-between items-center text-sm"
+    >
       <div class="flex items-center gap-2">
         <span class="text-xs">🛒</span>
         <span class="text-slate-300 font-medium">Restante para Compras</span>
       </div>
-      <span class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+      <span
+        class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+      >
         {formatEuros(disponibleCompras)}
       </span>
     </div>
   </a>
 
   <!-- 3. TARJETA ROJA: Gastos Fijos Pendientes -->
-  <a href="/gastos-fijos" class="block bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 hover:border-rose-600/50 border border-rose-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]">
-    <div class="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/15 rounded-full blur-2xl pointer-events-none"></div>
+  <a
+    href="/gastos-fijos"
+    class="block bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 hover:border-rose-600/50 border border-rose-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]"
+  >
+    <div
+      class="absolute -top-10 -right-10 w-32 h-32 bg-rose-500/15 rounded-full blur-2xl pointer-events-none"
+    >
+    </div>
 
     <div class="flex justify-between items-center mb-5">
       <div>
-        <span class="text-xs font-semibold uppercase tracking-wider text-rose-400 block mb-0.5">Gastos Fijos</span>
+        <span
+          class="text-xs font-semibold uppercase tracking-wider text-rose-400 block mb-0.5"
+          >Gastos Fijos</span
+        >
         <p class="text-xs text-slate-400">Pendientes de cobro este mes</p>
       </div>
-      <span class="text-xs bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-full border border-rose-500/30 font-semibold">
-        {gastosPendientes.length} {gastosPendientes.length === 1 ? 'pendiente' : 'pendientes'}
+      <span
+        class="text-xs bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-full border border-rose-500/30 font-semibold"
+      >
+        {gastosPendientes.length}
+        {gastosPendientes.length === 1 ? "pendiente" : "pendientes"}
       </span>
     </div>
 
     <div class="space-y-3 pt-2 border-t border-rose-900/40">
-      {gastosPendientes.length > 0 ? (
-        gastosPendientes.map((item) => (
-          <div class="flex justify-between items-center text-sm py-0.5">
-            <div class="flex items-center gap-2.5">
-              <span class="text-xs">📌</span>
-              <span class="text-slate-200 font-medium">{item.concepto}</span>
+      {
+        gastosPendientes.length > 0 ? (
+          gastosPendientes.map((item) => (
+            <div class="flex justify-between items-center text-sm py-0.5">
+              <div class="flex items-center gap-2.5">
+                <span class="text-xs">📌</span>
+                <span class="text-slate-200 font-medium">{item.concepto}</span>
+              </div>
+              <span class="font-semibold text-rose-400">
+                -{formatEuros(Number(item.cantidad))}
+              </span>
             </div>
-            <span class="font-semibold text-rose-400">
-              -{formatEuros(Number(item.cantidad))}
-            </span>
+          ))
+        ) : (
+          <div class="flex items-center gap-2 py-2 text-xs text-emerald-400 font-medium">
+            <span>✅</span>
+            <span>¡Todo al día! No quedan gastos fijos pendientes</span>
           </div>
-        ))
-      ) : (
-        <div class="flex items-center gap-2 py-2 text-xs text-emerald-400 font-medium">
-          <span>✅</span>
-          <span>¡Todo al día! No quedan gastos fijos pendientes</span>
-        </div>
-      )}
+        )
+      }
     </div>
   </a>
-
 </MainLayout>
+
+<!-- SCRIPT DE CONTROL PRIVACIDAD -->
+<script>
+  const btnPrivacidad = document.getElementById("btn-privacidad");
+  const iconoPrivacidad = document.getElementById("icono-privacidad");
+  const montosPrivados = document.querySelectorAll(".monto-privado");
+
+  // Recuperar preferencia de privacidad (por defecto visible)
+  let modoOculto = localStorage.getItem("modo_privado") === "true";
+
+  const actualizarVisibilidad = () => {
+    montosPrivados.forEach((el) => {
+      const elemento = el as HTMLElement;
+      const valorReal = elemento.getAttribute("data-valor") || "0.00 €";
+
+      if (modoOculto) {
+        elemento.textContent = "•••••• €";
+      } else {
+        elemento.textContent = valorReal;
+      }
+    });
+
+    if (iconoPrivacidad) {
+      iconoPrivacidad.textContent = modoOculto ? "🙈" : "👁️";
+    }
+  };
+
+  // Carga inicial
+  actualizarVisibilidad();
+
+  // Escuchador de clic con detención de propagación para no navegar a /carteras
+  btnPrivacidad?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    modoOculto = !modoOculto;
+    localStorage.setItem("modo_privado", String(modoOculto));
+    actualizarVisibilidad();
+  });
+</script>
