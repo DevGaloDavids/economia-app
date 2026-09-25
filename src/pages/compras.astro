@@ -46,7 +46,7 @@ const { restanteLimpieza } = await getLimpiezaData();
               <div class="flex justify-between items-center text-xs">
                 <div class="flex items-center gap-2 truncate pr-2">
                   <span class="text-slate-400 text-[10px]">{m.fecha}</span>
-                  <span class="text-slate-200 font-medium truncate">{m.concepto || 'Sin concepto'}</span>
+                  <span class="text-slate-200 font-medium truncate">{m.subcategoria_id || 'Sin concepto'}</span>
                 </div>
                 <span class={`font-semibold shrink-0 ${esIngreso ? 'text-emerald-400' : 'text-slate-300'}`}>
                   {esIngreso ? '+' : '-'}{formatEuros(Number(m.importe))}
