@@ -1,6 +1,6 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import { getComprasData, getTransporteData, getBarberiaData, getLimpiezaData } from '../services/finance';
+import { getComprasData, getTransporteData, getAcumuladoData } from '../services/finance';
 import { formatEuros } from '../utils/formatters';
 
 export const prerender = false;
@@ -8,8 +8,8 @@ export const prerender = false;
 // Carga directa de datos desde el servicio
 const { restanteCompras, ultimos5 } = await getComprasData();
 const { restanteTransporte, porcentajes } = await getTransporteData();
-const { restanteBarberia } = await getBarberiaData();
-const { restanteLimpieza } = await getLimpiezaData();
+const { restante: restanteBarberia } = await getAcumuladoData("Barberia");
+const { restante: restanteLimpieza } = await getAcumuladoData("Limpieza");
 ---
 
 <MainLayout title="Compras - Mi Economía" activeTab="compras">

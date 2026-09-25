@@ -1,12 +1,12 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase'; // Ajusta según la ubicación de tu cliente Supabase
+import { supabase } from '../../lib/supabase';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const data = await request.json();
     const { ahorroTrade, seQuedaRevolut, gastosVariables } = data;
     
-    // Fecha actual en formato YYYY-MM-DD
+    // Fecha actual YYYY-MM-DD
     const fechaHoy = new Date().toISOString().split('T')[0];
 
     // 1. INGRESO EN CUENTAS -> Trade
@@ -25,7 +25,6 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // 2. INGRESOS EN MOVIMIENTOS -> Categorías Variables
-    // Map de las categorías exactamente como están en la BBDD
     const mapaCategorias: Record<string, string> = {
       compras: 'Compras',
       luz: 'Luz',
@@ -59,12 +58,11 @@ export const POST: APIRoute = async ({ request }) => {
     const { error: errGastosFijos } = await supabase
       .from('GastosFijos')
       .update({ gastado: false })
-      .neq('concepto_id', ''); // Aplica el update a todas las filas
+      .neq('concepto_id', '');
 
     if (errGastosFijos) throw new Error(`Error en GastosFijos: ${errGastosFijos.message}`);
 
-    // 4. INGRESO EN CUENTAS -> Revolut C.P. (Acumulando con el último registro existente)
-    // Obtener el último saldo ingresado en Revolut C.P.
+    // 4. INGRESO EN CUENTAS -> Revolut C.P. (Acumulando saldo)
     const { data: ultimoRevolut, error: errUltimo } = await supabase
       .from('Cuentas')
       .select('importe')

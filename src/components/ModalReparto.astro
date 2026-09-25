@@ -137,6 +137,7 @@
 
 <script>
   let gastosFijosTotal = 0;
+  let esInicializado = false; // Guard de control
 
   async function obtenerGastosFijos() {
     try {
@@ -195,6 +196,9 @@
   }
 
   function initModalReparto() {
+    // Si ya se inicializó en esta carga de página, evitamos duplicar listeners
+    if (esInicializado) return;
+    
     const modalReinicio = document.getElementById("modal-reinicio");
     const btnAbrirReinicio = document.getElementById("btn-nav-reinicio");
     const btnCerrarReinicio = document.getElementById("btn-cerrar-reinicio");
@@ -205,6 +209,9 @@
     const pasoResultado = document.getElementById("paso-resultado");
     const btnVolverForm = document.getElementById("btn-volver-form");
     const btnConfirmarReparto = document.getElementById("btn-confirmar-reparto") as HTMLButtonElement;
+
+    if (!btnConfirmarReparto) return; // Validación de existencia
+    esInicializado = true;
 
     let datosCalculados = {
       ahorroTrade: 0,
@@ -222,15 +229,10 @@
     });
 
     inputNomina?.addEventListener("input", actualizarRecomendacionAhorro);
-    inputNomina?.addEventListener("keyup", actualizarRecomendacionAhorro);
 
     document.querySelectorAll(".input-gasto").forEach(input => {
       input.addEventListener("input", calcularTotalGastos);
     });
-
-    // Carga inicial al cargar el script
-    obtenerGastosFijos();
-    actualizarRecomendacionAhorro();
 
     formReinicio?.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -276,7 +278,7 @@
       formReinicio?.classList.remove("hidden");
     });
 
-    btnConfirmarReparto?.addEventListener("click", async () => {
+    btnConfirmarReparto.addEventListener("click", async () => {
       btnConfirmarReparto.textContent = "Guardando...";
       btnConfirmarReparto.disabled = true;
 
@@ -304,7 +306,10 @@
     });
   }
 
-  initModalReparto();
+  // Inicialización limpia
   document.addEventListener("DOMContentLoaded", initModalReparto);
-  document.addEventListener("astro:page-load", initModalReparto);
+  document.addEventListener("astro:page-load", () => {
+    esInicializado = false; // Reset para soportar la navegación de Astro
+    initModalReparto();
+  });
 </script>

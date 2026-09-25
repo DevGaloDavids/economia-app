@@ -217,23 +217,6 @@ export async function getTransporteData() {
   return { restanteTransporte, porcentajes };
 }
 
-// 7. Obtener datos para la tarjeta de Barbería
-export async function getBarberiaData() {
-  const { data: movimientos } = await supabase
-    .from("Movimientos")
-    .select("importe, tipo")
-    .eq("categoria_id", "Barberia");
-
-  const movs = movimientos || [];
-
-  const restanteBarberia = movs.reduce((acc, m) => {
-    const cantidad = Number(m.importe) || 0;
-    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
-  }, 0);
-
-  return { restanteBarberia };
-}
-
 // 8. Función genérica para servicios con gráfico de 6 meses (Luz, Agua, etc.)
 async function getServicioData(nombreCategoria: string) {
   const { data: movimientos } = await supabase
@@ -338,36 +321,4 @@ export async function getGastosFijosData() {
   const pendiente = totalEstimado - totalPagado;
 
   return { estadoGastosFijos, totalEstimado, totalPagado, pendiente };
-}
-
-export async function getLimpiezaData() {
-  try {
-    // 1. Obtener la suma del presupuesto/ingresos y de los gastos para 'Limpieza'
-    // (Asegúrate de ajustar el nombre de la categoría o el ID según tu base de datos)
-    const { data, error } = await supabase
-      .from('movimientos')
-      .select('importe, tipo')
-      .eq('categoria', 'Limpieza'); // O usa .eq('categoria_id', ID_LIMPIEZA)
-
-    if (error) throw error;
-
-    let totalIngresos = 0;
-    let totalGastos = 0;
-
-    data?.forEach((m) => {
-      const imp = Number(m.importe) || 0;
-      if (String(m.tipo).toLowerCase().trim() === 'ingreso') {
-        totalIngresos += imp;
-      } else {
-        totalGastos += imp;
-      }
-    });
-
-    const restanteLimpieza = totalIngresos - totalGastos;
-
-    return { restanteLimpieza };
-  } catch (err) {
-    console.error("Error cargando datos de Limpieza:", err);
-    return { restanteLimpieza: 0 };
-  }
 }

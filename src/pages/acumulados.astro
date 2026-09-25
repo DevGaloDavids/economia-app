@@ -11,7 +11,7 @@ const OBJETIVO_LENTILLAS = 48;
 
 // Carga de saldos actuales desde BBDD
 const { restante: restanteSeguros } = await getAcumuladoData("Seguros");
-const { restante: restanteLentillas } = await getAcumuladoData("lentilla");
+const { restante: restanteLentillas } = await getAcumuladoData("Lentillas");
 
 // Cálculos de porcentaje de progreso
 const pctSeguros = Math.min(Math.max(Math.round((restanteSeguros / OBJETIVO_SEGUROS) * 100), 0), 100);
