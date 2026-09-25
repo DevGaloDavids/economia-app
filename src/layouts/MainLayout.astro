@@ -115,3 +115,31 @@ const tabs = [
 
   </body>
 </html>
+
+<script>
+  import { supabase } from "../lib/supabase";
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentPath = window.location.pathname;
+
+    // Si NO hay sesión y NO estás en /login, redirigir a /login
+    if (!session && currentPath !== "/login") {
+      window.location.href = "/login";
+    }
+
+    // Si SÍ hay sesión y estás en /login, redirigir al inicio
+    if (session && currentPath === "/login") {
+      window.location.href = "/";
+    }
+  };
+
+  checkAuth();
+
+  // Redirigir a /login si se cierra la sesión en cualquier momento
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      window.location.href = "/login";
+    }
+  });
+</script>
