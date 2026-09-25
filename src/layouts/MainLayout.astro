@@ -7,7 +7,7 @@ import ModalReparto from '../components/ModalReparto.astro';
 interface Props {
   title?: string;
   activeTab:
-    "inicio" | "carteras" | "compras" | "servicios" | "acumulados" | "otros";
+    | "inicio" | "carteras" | "compras" | "servicios" | "acumulados" | "otros";
 }
 
 const { title = "Mi Economía", activeTab } = Astro.props;
@@ -88,7 +88,7 @@ const tabs = [
       <nav
         class="bg-slate-900/90 backdrop-blur-md border border-slate-800/80 rounded-full py-2.5 px-6 flex justify-around items-center shadow-2xl"
       >
-        <!-- NUEVO BOTÓN REINICIO / REPARTO -->
+        <!-- BOTÓN REPARTO -->
         <button
           id="btn-nav-reinicio"
           type="button"
@@ -106,7 +106,7 @@ const tabs = [
           <span class="text-[10px] font-medium mt-0.5">Carteras</span>
         </a>
 
-        <!-- BOTÓN + CENTRAL -->
+        <!-- BOTÓN + CENTRAL (NUEVO MOVIMIENTO) -->
         <button
           id="btn-nav-mas"
           type="button"
@@ -115,7 +115,7 @@ const tabs = [
           +
         </button>
 
-        <!-- BOTÓN ACTUALIZAR -->
+        <!-- BOTÓN ACTUALIZAR (SALDO / CUENTA) -->
         <button
           id="btn-nav-actualizar"
           type="button"
@@ -141,20 +141,33 @@ const tabs = [
     <ModalReparto />
 
     <script>
-      // Listener Botón Actualizar (Cuentas)
-      document
-        .getElementById("btn-nav-actualizar")
-        ?.addEventListener("click", () => {
-          document
-            .getElementById("modal-actualizar-cuenta")
-            ?.classList.remove("hidden");
+      // Aseguramos que los event listeners solo se asignen una vez
+      document.addEventListener("DOMContentLoaded", () => {
+        const btnMas = document.getElementById("btn-nav-mas");
+        const btnActualizar = document.getElementById("btn-nav-actualizar");
+        const btnReparto = document.getElementById("btn-nav-reinicio");
+
+        const modalMovimiento = document.getElementById("modal-nuevo-movimiento");
+        const modalCuenta = document.getElementById("modal-actualizar-cuenta");
+        const modalReparto = document.getElementById("modal-reparto"); // Verifica que este id coincida en ModalReparto
+
+        // Abrir ÚNICAMENTE el modal de Movimiento al pulsar +
+        btnMas?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modalMovimiento?.classList.remove("hidden");
         });
 
-      // Listener Botón + (Movimientos)
-      document.getElementById("btn-nav-mas")?.addEventListener("click", () => {
-        document
-          .getElementById("modal-nuevo-movimiento")
-          ?.classList.remove("hidden");
+        // Abrir ÚNICAMENTE el modal de Actualizar Cuenta al pulsar Actualizar
+        btnActualizar?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modalCuenta?.classList.remove("hidden");
+        });
+
+        // Abrir ÚNICAMENTE el modal de Reparto al pulsar Reparto
+        btnReparto?.addEventListener("click", (e) => {
+          e.stopPropagation();
+          modalReparto?.classList.remove("hidden");
+        });
       });
     </script>
   </body>
