@@ -13,15 +13,15 @@ const categorias = [
 ];
 ---
 
-<!-- BACKDROP DE NAVEGACIÓN -->
+<!-- BACKDROP DE NAVEGACIÓN (Centrado total siempre) -->
 <div 
   id="modal-nuevo-movimiento" 
-  class="fixed inset-0 z-50 flex items-center sm:items-center justify-center hidden"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
   style="background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
 >
-  <!-- TARJETA MODAL -->
+  <!-- TARJETA MODAL (Redondeado completo rounded-3xl en todos los dispositivos) -->
   <div 
-    class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-2xl p-6 shadow-2xl relative animate-slide-up"
+    class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative animate-slide-up"
     style="max-height: 90vh; overflow-y: auto;"
   >
     <!-- CABECERA -->
