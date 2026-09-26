@@ -168,6 +168,8 @@ export async function getComprasData() {
 
   const todos = movsCompras || [];
 
+  console.log(todos)
+
   const restanteCompras = todos.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
     return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
