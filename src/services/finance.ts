@@ -7,10 +7,12 @@ const ORDEN_CUENTAS = ["Revolut C.P.", "Revolut C.R.", "Pulse", "Trade", "Axa"];
 
 // 1. Obtener patrimonio por cuentas
 export async function getPatrimonioData() {
+  // Ordenamos por fecha descendente y por created_at (o id si fuera int) como desempate
   const { data: registrosCuentas } = await supabase
     .from("Cuentas")
     .select("cuenta_id, importe, fecha, tipo")
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false }); // 👈 Desempate por timestamp preciso
 
   const cuentasData = registrosCuentas || [];
   const saldosPorCuenta: Record<string, number> = {};
@@ -21,6 +23,7 @@ export async function getPatrimonioData() {
     const tipo = reg.tipo;
 
     if (CUENTAS_ULTIMO_SALDO.includes(nombreCuenta)) {
+      // Como vienen ordenados de más reciente a más antiguo, el primer registro que leamos es el último ingresado
       if (saldosPorCuenta[nombreCuenta] === undefined) {
         saldosPorCuenta[nombreCuenta] = cantidad;
       }
@@ -107,7 +110,8 @@ export async function getTarjetaData(nombreCuenta: string) {
     .from("Cuentas")
     .select("importe, fecha, tipo")
     .eq("cuenta_id", nombreCuenta)
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false }); // 👈 Desempate por timestamp preciso
 
   const lista = registros || [];
   if (lista.length === 0) {
@@ -120,6 +124,7 @@ export async function getTarjetaData(nombreCuenta: string) {
   let historial10: { importe: number; fecha: string }[] = [];
 
   if (esUltimoSaldo) {
+    // Al estar ordenado por fecha + created_at descendente, el índice 0 es el verdaderamente más reciente
     saldoActual = Number(lista[0].importe) || 0;
 
     historial10 = lista.slice(0, 10).reverse().map((reg) => ({
@@ -158,7 +163,8 @@ export async function getComprasData() {
     .from("Movimientos")
     .select("*")
     .eq("categoria_id", "Compras")
-    .order("fecha", { ascending: false });
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false });
 
   const todos = movsCompras || [];
 
@@ -172,7 +178,7 @@ export async function getComprasData() {
   return { restanteCompras, ultimos5 };
 }
 
-// 6. Obtener datos para la tarjeta de Transporte (Desglose por subcategorías exactas)
+// 6. Obtener datos para la tarjeta de Transporte
 export async function getTransporteData() {
   const { data: movimientos } = await supabase
     .from("Movimientos")
@@ -217,7 +223,7 @@ export async function getTransporteData() {
   return { restanteTransporte, porcentajes };
 }
 
-// 8. Función genérica para servicios con gráfico de 6 meses (Luz, Agua, etc.)
+// 8. Función genérica para servicios con gráfico de 6 meses
 async function getServicioData(nombreCategoria: string) {
   const { data: movimientos } = await supabase
     .from("Movimientos")
@@ -280,7 +286,7 @@ export async function getAguaData() {
   return await getServicioData("Agua");
 }
 
-// 11. Auxiliar para obtener el saldo (Ingresos - Gastos) de cualquier categoría exacta
+// 11. Auxiliar para obtener el saldo de cualquier categoría exacta
 export async function getAcumuladoData(nombreCategoria: string) {
   const { data: movimientos } = await supabase
     .from("Movimientos")
@@ -297,7 +303,7 @@ export async function getAcumuladoData(nombreCategoria: string) {
   return { restante };
 }
 
-// 12. Obtener estado de Gastos Fijos reales desde Supabase
+// 12. Obtener estado de Gastos Fijos reales
 export async function getGastosFijosData() {
   const { data: gastosFijos, error } = await supabase
     .from("GastosFijos")
