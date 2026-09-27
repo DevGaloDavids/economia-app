@@ -4,6 +4,7 @@ import {
   getPatrimonioData,
   getBalanceData,
   getGastosPendientesData,
+  getTransporteData,
 } from "../services/finance";
 import { formatEuros } from "../utils/formatters";
 
@@ -12,6 +13,7 @@ export const prerender = false;
 const { patrimonioTotal, listaCuentasDesglose } = await getPatrimonioData();
 const { balanceTotalFinal, disponibleCompras } = await getBalanceData();
 const gastosPendientes = await getGastosPendientesData();
+const { restanteTransporte } = await getTransporteData();
 ---
 
 <MainLayout title="Mi Economía" activeTab="inicio">
@@ -93,7 +95,7 @@ const gastosPendientes = await getGastosPendientesData();
 
   <!-- 2. TARJETA VERDE: Cuenta Gastos -->
   <a
-    href="/balance"
+    href="/compras"
     class="block bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 hover:border-emerald-600/50 border border-emerald-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]"
   >
     <div
@@ -122,24 +124,38 @@ const gastosPendientes = await getGastosPendientesData();
       </p>
     </div>
 
-    <div
-      class="pt-4 border-t border-emerald-900/40 flex justify-between items-center text-sm"
-    >
-      <div class="flex items-center gap-2">
-        <span class="text-xs">🛒</span>
-        <span class="text-slate-300 font-medium">Restante para Compras</span>
+    <div class="pt-4 border-t border-emerald-900/40 space-y-3">
+      <!-- Fila 1: Restante Compras -->
+      <div class="flex justify-between items-center text-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-xs">🛒</span>
+          <span class="text-slate-300 font-medium">Restante para Compras</span>
+        </div>
+        <span
+          class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+        >
+          {formatEuros(disponibleCompras)}
+        </span>
       </div>
-      <span
-        class={`font-semibold ${disponibleCompras >= 0 ? "text-emerald-400" : "text-rose-400"}`}
-      >
-        {formatEuros(disponibleCompras)}
-      </span>
+
+      <!-- Fila 2: Restante Transporte -->
+      <div class="flex justify-between items-center text-sm">
+        <div class="flex items-center gap-2">
+          <span class="text-xs">⛽</span>
+          <span class="text-slate-300 font-medium">Restante Transporte</span>
+        </div>
+        <span
+          class={`font-semibold ${restanteTransporte >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+        >
+          {formatEuros(restanteTransporte)}
+        </span>
+      </div>
     </div>
   </a>
 
   <!-- 3. TARJETA ROJA: Gastos Fijos Pendientes -->
   <a
-    href="/gastos-fijos"
+    href="/fijos"
     class="block bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 hover:border-rose-600/50 border border-rose-800/40 rounded-3xl p-6 shadow-xl relative overflow-hidden transition active:scale-[0.98]"
   >
     <div
@@ -159,7 +175,7 @@ const gastosPendientes = await getGastosPendientesData();
         class="text-xs bg-rose-500/15 text-rose-300 px-2.5 py-1 rounded-full border border-rose-500/30 font-semibold"
       >
         {gastosPendientes.length}
-        {gastosPendientes.length === 1 ? "pendiente" : "pendientes"}
+        {gastosPendientes.length === 1 ? " pendiente" : " pendientes"}
       </span>
     </div>
 
