@@ -3,6 +3,7 @@ import "../styles/global.css";
 import NuevoRegistroModal from "../components/NuevoRegistroModal.astro";
 import NuevoMovimientoModal from "../components/NuevoMovimientoModal.astro";
 import ModalReparto from "../components/ModalReparto.astro";
+import ModalGestionMovimientos from "../components/ModalGestionMovimientos.astro";
 
 interface Props {
   title?: string;
@@ -123,6 +124,7 @@ const tabs = [
     <NuevoRegistroModal />
     <NuevoMovimientoModal />
     <ModalReparto />
+    <ModalGestionMovimientos/>
 
     <script>
       // Aseguramos que los event listeners solo se asignen una vez

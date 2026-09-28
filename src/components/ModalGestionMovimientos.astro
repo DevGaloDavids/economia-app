@@ -1,0 +1,212 @@
+<!-- ModalGestionMovimientos.astro -->
+<div 
+  id="modal-gestion-movimientos" 
+  class="fixed inset-0 w-screen h-screen bg-black/70 backdrop-blur-md flex items-center justify-center hidden z-[100] p-4"
+  style="margin: 0; top: 0; left: 0;"
+>
+  <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative z-[101]">
+    
+    <!-- Cabecera -->
+    <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+      <h3 id="modal-titulo-categoria" class="text-lg font-bold text-white capitalize flex items-center gap-2">
+        <span>⚙️</span>
+        <span id="texto-titulo">Gestionar Movimientos</span>
+      </h3>
+      <button 
+        id="btn-cerrar-modal-gestion" 
+        type="button"
+        class="text-slate-400 hover:text-white text-2xl font-bold px-2 rounded-lg hover:bg-slate-800 transition"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Lista de Movimientos -->
+    <div id="contenedor-lista-movimientos" class="max-h-80 overflow-y-auto space-y-2.5 pr-1">
+      <p class="text-slate-400 text-sm text-center py-4">Cargando movimientos...</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function initModalGestion() {
+    const modal = document.getElementById("modal-gestion-movimientos");
+    const btnCerrar = document.getElementById("btn-cerrar-modal-gestion");
+    const contenedorLista = document.getElementById("contenedor-lista-movimientos");
+    const textoTitulo = document.getElementById("texto-titulo");
+
+    if (!modal) return;
+
+    btnCerrar?.addEventListener("click", () => {
+      modal.classList.add("hidden");
+    });
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.add("hidden");
+      }
+    });
+
+    (window as any).abrirModalGestion = async (categoria: string) => {
+      if (textoTitulo) textoTitulo.textContent = `Movimientos: ${categoria}`;
+      modal.classList.remove("hidden");
+      await cargarMovimientos(categoria);
+    };
+
+    async function cargarMovimientos(categoria: string) {
+      if (!contenedorLista) return;
+      contenedorLista.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">Cargando...</p>`;
+
+      try {
+        const res = await fetch(`/api/movimientos?categoria=${encodeURIComponent(categoria)}`);
+        const data = await res.json();
+
+        if (!Array.isArray(data) || data.length === 0) {
+          contenedorLista.innerHTML = `<p class="text-slate-500 text-sm text-center py-4">No hay movimientos registrados.</p>`;
+          return;
+        }
+
+        renderLista(data);
+      } catch (err) {
+        contenedorLista.innerHTML = `<p class="text-rose-400 text-sm text-center py-4">Error al cargar datos.</p>`;
+      }
+    }
+
+    function renderLista(data: any[]) {
+      if (!contenedorLista) return;
+
+      contenedorLista.innerHTML = data.map((mov: any) => `
+        <div id="card-mov-${mov.id}" class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/50 transition-all duration-200">
+          
+          <!-- VISTA NORMAL DEL MOVIMIENTO -->
+          <div id="vista-normal-${mov.id}" class="flex items-center justify-between gap-2">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-400">${mov.fecha} ${mov.subcategoria_id ? `• ${mov.subcategoria_id}` : ''}</span>
+              <span class="font-semibold text-sm ${mov.tipo === 'Ingreso' ? 'text-emerald-400' : 'text-slate-200'}">
+                ${mov.tipo === 'Ingreso' ? '+' : '-'}${Number(mov.importe).toFixed(2)} €
+              </span>
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+              <button 
+                onclick="mostrarFormEditar('${mov.id}')"
+                class="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-medium rounded-xl border border-blue-500/30 transition"
+              >
+                ✏️
+              </button>
+              <button 
+                onclick="mostrarConfirmBorrar('${mov.id}')"
+                class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 text-xs font-medium rounded-xl border border-rose-500/30 transition"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <!-- MODO EDICIÓN DENTRO DEL TARJETÓN -->
+          <div id="form-editar-${mov.id}" class="hidden flex-col gap-2 pt-1">
+            <span class="text-[11px] font-semibold text-slate-300">Editar importe:</span>
+            <div class="flex items-center gap-2">
+              <input 
+                type="number" 
+                step="0.01" 
+                id="input-importe-${mov.id}" 
+                value="${mov.importe}" 
+                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+              />
+              <button 
+                onclick="guardarEdicion('${mov.id}', '${mov.tipo}')"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition"
+              >
+                Guardar
+              </button>
+              <button 
+                onclick="cancelarAccion('${mov.id}')"
+                class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium rounded-xl transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+          <!-- MODO CONFIRMAR BORRADO DENTRO DEL TARJETÓN -->
+          <div id="confirm-borrar-${mov.id}" class="hidden flex-col gap-2 pt-1">
+            <span class="text-[11px] font-semibold text-rose-400">¿Eliminar este movimiento?</span>
+            <div class="flex items-center gap-2">
+              <button 
+                onclick="confirmarBorrado('${mov.id}')"
+                class="w-full py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition"
+              >
+                Sí, borrar
+              </button>
+              <button 
+                onclick="cancelarAccion('${mov.id}')"
+                class="w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium rounded-xl transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `).join('');
+    }
+
+    // Controles UI internos
+    (window as any).mostrarFormEditar = (id: string) => {
+      document.getElementById(`vista-normal-${id}`)?.classList.add("hidden");
+      document.getElementById(`form-editar-${id}`)?.classList.remove("hidden");
+      document.getElementById(`form-editar-${id}`)?.classList.add("flex");
+    };
+
+    (window as any).mostrarConfirmBorrar = (id: string) => {
+      document.getElementById(`vista-normal-${id}`)?.classList.add("hidden");
+      document.getElementById(`confirm-borrar-${id}`)?.classList.remove("hidden");
+      document.getElementById(`confirm-borrar-${id}`)?.classList.add("flex");
+    };
+
+    (window as any).cancelarAccion = (id: string) => {
+      document.getElementById(`form-editar-${id}`)?.classList.add("hidden");
+      document.getElementById(`form-editar-${id}`)?.classList.remove("flex");
+      document.getElementById(`confirm-borrar-${id}`)?.classList.add("hidden");
+      document.getElementById(`confirm-borrar-${id}`)?.classList.remove("flex");
+      document.getElementById(`vista-normal-${id}`)?.classList.remove("hidden");
+    };
+
+    // Peticiones a API
+    (window as any).guardarEdicion = async (id: string, tipo: string) => {
+      const input = document.getElementById(`input-importe-${id}`) as HTMLInputElement;
+      const nuevoImporte = parseFloat(input?.value);
+
+      if (isNaN(nuevoImporte)) return;
+
+      try {
+        const res = await fetch('/api/movimientos', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, importe: nuevoImporte, tipo })
+        });
+        if (res.ok) window.location.reload();
+      } catch (err) {
+        console.error("Error al actualizar", err);
+      }
+    };
+
+    (window as any).confirmarBorrado = async (id: string) => {
+      try {
+        const res = await fetch('/api/movimientos', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) window.location.reload();
+      } catch (err) {
+        console.error("Error al borrar", err);
+      }
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded", initModalGestion);
+  document.addEventListener("astro:page-load", initModalGestion);
+</script>
