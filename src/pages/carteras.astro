@@ -95,9 +95,12 @@ const tarjetasData = await Promise.all(
           </span>
         </div>
 
-        <!-- Saldo actual -->
+                <!-- Saldo actual -->
         <div class="mb-4">
-          <div class="text-3xl font-extrabold text-white">
+          <div 
+            class="monto-privado text-3xl font-extrabold text-white font-mono"
+            data-valor={formatEuros(item.saldoActual)}
+          >
             {formatEuros(item.saldoActual)}
           </div>
           <p class="text-[11px] text-slate-400">Saldo actual disponible</p>
@@ -128,6 +131,19 @@ const tarjetasData = await Promise.all(
           </p>
         )}
       </div>
-    ))}
+        ))}
   </div>
 </MainLayout>
+
+<script>
+  // Al cargar la página, verificamos si el modo privado está activo
+  const montosPrivados = document.querySelectorAll(".monto-privado");
+  const modoOculto = localStorage.getItem("modo_privado") === "true";
+
+  if (modoOculto) {
+    montosPrivados.forEach((el) => {
+      const elemento = el as HTMLElement;
+      elemento.textContent = "•••••• €";
+    });
+  }
+</script>

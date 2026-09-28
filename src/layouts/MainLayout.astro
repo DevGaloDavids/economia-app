@@ -49,10 +49,22 @@ const tabs = [
           </h1>
           <p class="text-xs text-slate-400">Resumen financiero</p>
         </div>
-        <div
-          class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner"
-        >
-          GD
+                <div class="flex items-center gap-3">
+          <!-- BOTÓN PRIVACIDAD GLOBAL -->
+          <button
+            id="btn-privacidad-global"
+            type="button"
+            title="Ocultar/Mostrar valores"
+            class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-center text-sm transition active:scale-90 shadow-inner"
+          >
+            <span id="icono-privacidad-global">👁️</span>
+          </button>
+
+          <div
+            class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-sm font-semibold text-emerald-400 shadow-inner"
+          >
+            GD
+          </div>
         </div>
       </header>
 
@@ -126,9 +138,37 @@ const tabs = [
     <ModalReparto />
     <ModalGestionMovimientos/>
 
-    <script>
-      // Aseguramos que los event listeners solo se asignen una vez
+        <script>
+      // LÓGICA DE PRIVACIDAD GLOBAL
+      const actualizarPrivacidadGlobal = () => {
+        const iconoPrivacidad = document.getElementById("icono-privacidad-global");
+        const montosPrivados = document.querySelectorAll(".monto-privado");
+        const modoOculto = localStorage.getItem("modo_privado") === "true";
+
+        montosPrivados.forEach((el) => {
+          const elemento = el as HTMLElement;
+          const valorReal = elemento.getAttribute("data-valor") || "0,00 €";
+          elemento.textContent = modoOculto ? "•••••• €" : valorReal;
+        });
+
+        if (iconoPrivacidad) {
+          iconoPrivacidad.textContent = modoOculto ? "🙈" : "👁️";
+        }
+      };
+
       document.addEventListener("DOMContentLoaded", () => {
+        // Ejecución inicial
+        actualizarPrivacidadGlobal();
+
+        // Event listener del botón global
+        const btnPrivacidad = document.getElementById("btn-privacidad-global");
+        btnPrivacidad?.addEventListener("click", () => {
+          const modoOcultoActual = localStorage.getItem("modo_privado") === "true";
+          localStorage.setItem("modo_privado", String(!modoOcultoActual));
+          actualizarPrivacidadGlobal();
+        });
+
+                // Resto de modales...
         const btnMas = document.getElementById("btn-nav-mas");
         const btnActualizar = document.getElementById("btn-nav-actualizar");
         const btnReparto = document.getElementById("btn-nav-reinicio");
@@ -137,7 +177,7 @@ const tabs = [
           "modal-nuevo-movimiento",
         );
         const modalCuenta = document.getElementById("modal-actualizar-cuenta");
-        const modalReparto = document.getElementById("modal-reparto"); // Verifica que este id coincida en ModalReparto
+        const modalReparto = document.getElementById("modal-reparto");
 
         // Abrir ÚNICAMENTE el modal de Movimiento al pulsar +
         btnMas?.addEventListener("click", (e) => {
