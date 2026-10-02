@@ -176,7 +176,7 @@
     const nomina = parseFloat(inputNomina.value) || 0;
     
     if (nomina > 0) {
-      const ahorroTotal20 = (nomina + 150) * 0.20;
+      const ahorroTotal20 = nomina * 0.20;
       const recomendacionTrade = ahorroTotal20 - 100;
 
       if (recAhorro) {
