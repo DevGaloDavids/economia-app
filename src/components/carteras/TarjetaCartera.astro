@@ -1,0 +1,100 @@
+---
+import type { ConfiguracionCartera } from "../../data/carteras";
+import { formatEuros } from "../../utils/formatters";
+import type { generateSVGPath } from "../../utils/chart";
+
+interface Props extends ConfiguracionCartera {
+  saldoActual: number;
+  historial10: { importe: number; fecha: string }[];
+  chart: ReturnType<typeof generateSVGPath>;
+}
+
+const {
+  nombre,
+  icono,
+  gradientClass,
+  glowClass,
+  textClass,
+  badgeClass,
+  strokeColor,
+  stopColor,
+  gradId,
+  saldoActual,
+  historial10,
+  chart,
+} = Astro.props;
+
+const saldoFormateado = formatEuros(saldoActual);
+---
+
+<div
+  class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden`}
+>
+  <div
+    class={`absolute -top-10 -right-10 w-32 h-32 ${glowClass} rounded-full blur-2xl pointer-events-none`}
+  >
+  </div>
+
+  <div class="flex justify-between items-start mb-3">
+    <div class="flex items-center gap-2">
+      <span class="text-base">{icono}</span>
+      <span class={`text-xs font-semibold uppercase tracking-wider ${textClass}`}>
+        {nombre}
+      </span>
+    </div>
+    <span
+      class={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${badgeClass}`}
+    >
+      Últimos 10 registros
+    </span>
+  </div>
+
+  <div class="mb-4">
+    <div
+      class="monto-privado text-3xl font-extrabold text-white font-mono"
+      data-valor={saldoFormateado}
+    >
+      {saldoFormateado}
+    </div>
+    <p class="text-[11px] text-slate-400">Saldo actual disponible</p>
+  </div>
+
+  {
+    historial10.length > 1 ? (
+      <div class="pt-2 border-t border-slate-800/80 relative">
+        <svg viewBox="0 0 320 60" class="w-full h-16 overflow-visible">
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color={stopColor} stop-opacity="0.35" />
+              <stop offset="100%" stop-color={stopColor} stop-opacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          <path d={chart.areaPath} fill={`url(#${gradId})`} />
+          <path
+            d={chart.path}
+            fill="none"
+            stroke={strokeColor}
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+          {chart.lastPoint && (
+            <circle
+              cx={chart.lastPoint.x}
+              cy={chart.lastPoint.y}
+              r="4"
+              fill={strokeColor}
+              class="animate-pulse"
+            />
+          )}
+        </svg>
+      </div>
+    ) : (
+      <p class="text-xs text-slate-500 pt-3 border-t border-slate-800/80">
+        Se necesitan al menos 2 registros para la gráfica
+      </p>
+    )
+  }
+</div>
