@@ -1,0 +1,69 @@
+---
+import { formatEuros } from "../../utils/formatters";
+
+interface Props {
+  icono: string;
+  nombre: string;
+  restante: number;
+  tituloAviso: string;
+  mensaje: string;
+  cardStyle: string;
+  colorNombre: string;
+  colorAviso: string;
+  borderStyle: string;
+  mensajeColor?: string;
+}
+
+const {
+  icono,
+  nombre,
+  restante,
+  tituloAviso,
+  mensaje,
+  cardStyle,
+  colorNombre,
+  colorAviso,
+  borderStyle,
+  mensajeColor = "#94a3b8",
+} = Astro.props;
+---
+
+<div
+  style={`${cardStyle} border-radius: 1.25rem; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;`}
+>
+  <div>
+    <div
+      style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;"
+    >
+      <span style="font-size: 13px;">{icono}</span>
+      <span
+        style={`font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: ${colorNombre}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`}
+      >
+        {nombre}
+      </span>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <div
+        style={`font-size: 18px; font-weight: 800; ${restante >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}
+      >
+        {formatEuros(restante)}
+      </div>
+      <p style="font-size: 9px; color: #94a3b8; margin: 0;">Restante</p>
+    </div>
+  </div>
+
+  <div style={`margin-top: 8px; padding-top: 8px; ${borderStyle}`}>
+    <div
+      style={`display: flex; align-items: center; gap: 4px; font-size: 10px; font-weight: bold; color: ${colorAviso};`}
+    >
+      <span>⚠️</span>
+      <span>{tituloAviso}</span>
+    </div>
+    <p
+      style={`font-size: 9px; color: ${mensajeColor}; margin: 3px 0 0 0; line-height: 1.2;`}
+    >
+      {mensaje}
+    </p>
+  </div>
+</div>

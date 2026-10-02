@@ -1,0 +1,92 @@
+---
+import { getComprasData } from "../../services/finance";
+import { formatEuros } from "../../utils/formatters";
+
+interface Props {
+  restante: number;
+  ultimos5: Awaited<ReturnType<typeof getComprasData>>["ultimos5"];
+}
+
+const { restante, ultimos5 } = Astro.props;
+---
+
+<div
+  onclick="window.abrirModalGestion && window.abrirModalGestion('Compras')"
+  class="bg-gradient-to-br from-emerald-950/50 via-slate-900 to-slate-900 border border-emerald-800/40 rounded-3xl p-6 shadow-2xl relative overflow-hidden cursor-pointer hover:border-emerald-600/60 transition-all duration-200 active:scale-[0.99]"
+>
+  <div
+    class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"
+  >
+  </div>
+
+  <div class="flex justify-between items-start mb-3">
+    <div class="flex items-center gap-2">
+      <span class="text-base">🛒</span>
+      <span
+        class="text-xs font-semibold uppercase tracking-wider text-emerald-400"
+      >
+        Compras
+      </span>
+    </div>
+
+    <span
+      class="text-[10px] bg-emerald-500/15 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30 font-medium flex items-center gap-1 hover:bg-emerald-500/25 transition"
+    >
+      <span>Presupuesto</span>
+      <span class="text-[9px]">⚙️</span>
+    </span>
+  </div>
+
+  <div class="mb-5">
+    <div
+      class={`text-3xl font-extrabold ${restante >= 0 ? "text-white" : "text-rose-400"}`}
+    >
+      {formatEuros(restante)}
+    </div>
+    <p class="text-[11px] text-slate-400">
+      Restante disponible para compras
+    </p>
+  </div>
+
+  <div class="pt-3 border-t border-emerald-900/40 space-y-2.5">
+    <div class="flex justify-between items-center">
+      <span
+        class="text-[11px] font-semibold text-emerald-400/90 uppercase tracking-wider block"
+      >
+        Últimos movimientos
+      </span>
+      <span class="text-[10px] text-emerald-500/70 underline">Gestionar</span>
+    </div>
+
+    {
+      ultimos5 && ultimos5.length > 0 ? (
+        ultimos5.map((movimiento) => {
+          const esIngreso =
+            String(movimiento.tipo || "")
+              .trim()
+              .toLowerCase() === "ingreso";
+          return (
+            <div class="flex justify-between items-center text-xs">
+              <div class="flex items-center gap-2 truncate pr-2">
+                <span class="text-slate-400 text-[10px]">
+                  {movimiento.fecha}
+                </span>
+                <span class="text-slate-200 font-medium truncate">
+                  {movimiento.subcategoria_id || "Sin concepto"}
+                </span>
+              </div>
+              <span
+                class={`font-semibold shrink-0 ${esIngreso ? "text-emerald-400" : "text-slate-300"}`}
+              >
+                {esIngreso ? "+" : "-"}
+                {formatEuros(Number(movimiento.importe))}
+              </span>
+            </div>
+          );
+        })
+      ) : (
+        <p class="text-xs text-slate-500">Sin movimientos registrados</p>
+      )
+    }
+  </div>
+</div>
