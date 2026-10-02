@@ -1,0 +1,114 @@
+---
+import { formatEuros } from "../../utils/formatters";
+
+interface Props {
+  icono: string;
+  nombre: string;
+  restante: number;
+  historia: {
+    label: string;
+    gasto: number;
+    porcentajeAltura: number;
+  }[];
+  cardBackground: string;
+  borderColor: string;
+  glowColor: string;
+  titleColor: string;
+  badgeBackground: string;
+  badgeColor: string;
+  badgeBorderColor: string;
+  chartBorderColor: string;
+  barBackground: string;
+  barGradient: string;
+}
+
+const {
+  icono,
+  nombre,
+  restante,
+  historia,
+  cardBackground,
+  borderColor,
+  glowColor,
+  titleColor,
+  badgeBackground,
+  badgeColor,
+  badgeBorderColor,
+  chartBorderColor,
+  barBackground,
+  barGradient,
+} = Astro.props;
+---
+
+<div
+  style={`background: ${cardBackground}; border: 1px solid ${borderColor}; border-radius: 1.5rem; padding: 20px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden;`}
+>
+  <div
+    style={`position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: ${glowColor}; border-radius: 9999px; filter: blur(24px); pointer-events: none;`}
+  >
+  </div>
+
+  <div
+    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;"
+  >
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 18px;">{icono}</span>
+      <span
+        style={`font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: ${titleColor};`}
+      >
+        {nombre}
+      </span>
+    </div>
+    <span
+      style={`font-size: 10px; background: ${badgeBackground}; color: ${badgeColor}; padding: 4px 10px; border-radius: 9999px; border: 1px solid ${badgeBorderColor}; font-weight: 600;`}
+    >
+      Acumulado
+    </span>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <div
+      style={`font-size: 28px; font-weight: 800; ${restante >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}
+    >
+      {formatEuros(restante)}
+    </div>
+    <p style="font-size: 11px; color: #94a3b8; margin: 2px 0 0 0;">
+      Saldo restante disponible
+    </p>
+  </div>
+
+  <div style={`padding-top: 14px; border-top: 1px solid ${chartBorderColor};`}>
+    <span
+      style={`font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: ${titleColor}; display: block; margin-bottom: 14px;`}
+    >
+      Gasto mensual (Últimos 6 meses)
+    </span>
+
+    <div
+      style="display: flex; align-items: flex-end; justify-content: space-between; height: 110px; padding: 0 4px; gap: 8px;"
+    >
+      {
+        historia.map((mes) => (
+          <div
+            style="display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end;"
+          >
+            <span style="font-size: 9px; color: #cbd5e1; font-weight: 600; margin-bottom: 4px;">
+              {mes.gasto > 0 ? `${Math.round(mes.gasto)}€` : "0€"}
+            </span>
+            <div
+              style={`width: 100%; max-width: 28px; background: ${barBackground}; border-radius: 6px 6px 0 0; height: 80px; display: flex; align-items: flex-end; overflow: hidden;`}
+            >
+              <div
+                style={`width: 100%; height: ${Math.max(mes.porcentajeAltura, 6)}%; background: ${barGradient}; border-radius: 4px 4px 0 0; transition: height 0.3s ease;`}
+              >
+              </div>
+            </div>
+            <span style="font-size: 9px; color: #94a3b8; margin-top: 6px; font-weight: 500;">
+              {mes.label}
+            </span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</div>

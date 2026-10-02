@@ -1,0 +1,92 @@
+---
+import { formatEuros } from "../../utils/formatters";
+
+interface Props {
+  icono: string;
+  nombre: string;
+  restante: number;
+  objetivo: number;
+  porcentaje: number;
+  cardBackground: string;
+  cardBorder: string;
+  glowColor: string;
+  titleColor: string;
+  dividerColor: string;
+  labelColor: string;
+  trackBackground: string;
+  trackBorder: string;
+  progressGradient: string;
+}
+
+const {
+  icono,
+  nombre,
+  restante,
+  objetivo,
+  porcentaje,
+  cardBackground,
+  cardBorder,
+  glowColor,
+  titleColor,
+  dividerColor,
+  labelColor,
+  trackBackground,
+  trackBorder,
+  progressGradient,
+} = Astro.props;
+---
+
+<div
+  style={`background: ${cardBackground}; border: 1px solid ${cardBorder}; border-radius: 1.25rem; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box; position: relative;`}
+>
+  <div
+    style={`position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: ${glowColor}; border-radius: 9999px; filter: blur(16px); pointer-events: none;`}
+  >
+  </div>
+
+  <div>
+    <div
+      style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;"
+    >
+      <span style="font-size: 13px;">{icono}</span>
+      <span
+        style={`font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; color: ${titleColor}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`}
+      >
+        {nombre}
+      </span>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <div
+        style={`font-size: 18px; font-weight: 800; ${restante >= 0 ? "color: #ffffff;" : "color: #fb7185;"}`}
+      >
+        {formatEuros(restante)}
+      </div>
+      <p style="font-size: 9px; color: #94a3b8; margin: 1px 0 0 0;">
+        Acumulado actual
+      </p>
+    </div>
+  </div>
+
+  <div
+    style={`margin-top: 6px; padding-top: 8px; border-top: 1px solid ${dividerColor};`}
+  >
+    <div
+      style={`display: flex; justify-content: space-between; align-items: center; font-size: 9px; margin-bottom: 4px; color: ${labelColor};`}
+    >
+      <span>Objetivo</span>
+      <span style="font-weight: bold; color: #ffffff;">
+        {formatEuros(objetivo)}
+      </span>
+    </div>
+
+    <div
+      style={`width: 100%; background: ${trackBackground}; height: 6px; border-radius: 9999px; overflow: hidden; border: 1px solid ${trackBorder};`}
+    >
+      <div
+        style={`width: ${porcentaje}%; background: ${progressGradient}; height: 100%; border-radius: 9999px; transition: width 0.3s ease;`}
+      >
+      </div>
+    </div>
+  </div>
+</div>
