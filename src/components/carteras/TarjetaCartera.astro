@@ -28,7 +28,8 @@ const saldoFormateado = formatEuros(saldoActual);
 ---
 
 <div
-  class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden`}
+  onclick={`window.abrirModalGestion && window.abrirModalGestion('${nombre}', 'cuenta')`}
+  class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden cursor-pointer hover:brightness-110 transition-all duration-200 active:scale-[0.99]`}
 >
   <div
     class={`absolute -top-10 -right-10 w-32 h-32 ${glowClass} rounded-full blur-2xl pointer-events-none`}

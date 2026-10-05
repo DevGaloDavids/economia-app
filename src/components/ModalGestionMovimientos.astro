@@ -35,6 +35,7 @@
     const btnCerrar = document.getElementById("btn-cerrar-modal-gestion");
     const contenedorLista = document.getElementById("contenedor-lista-movimientos");
     const textoTitulo = document.getElementById("texto-titulo");
+    let tipoRegistroActual: "categoria" | "cuenta" = "categoria";
 
     if (!modal) return;
 
@@ -48,18 +49,29 @@
       }
     });
 
-    (window as any).abrirModalGestion = async (categoria: string) => {
+    (window as any).abrirModalGestion = async (
+      categoria: string,
+      tipoRegistro: "categoria" | "cuenta" = "categoria",
+    ) => {
+      tipoRegistroActual = tipoRegistro;
       if (textoTitulo) textoTitulo.textContent = `Movimientos: ${categoria}`;
       modal.classList.remove("hidden");
-      await cargarMovimientos(categoria);
+      await cargarMovimientos(categoria, tipoRegistro);
     };
 
-    async function cargarMovimientos(categoria: string) {
+    async function cargarMovimientos(
+      categoria: string,
+      tipoRegistro: "categoria" | "cuenta",
+    ) {
       if (!contenedorLista) return;
       contenedorLista.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">Cargando...</p>`;
 
       try {
-        const res = await fetch(`/api/movimientos?categoria=${encodeURIComponent(categoria)}`);
+        const filtro = tipoRegistro === "cuenta" ? "cuenta" : "categoria";
+        const res = await fetch(
+          `/api/movimientos?${filtro}=${encodeURIComponent(categoria)}`,
+        );
+        if (!res.ok) throw new Error("No se pudieron cargar los movimientos.");
         const data = await res.json();
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -67,13 +79,16 @@
           return;
         }
 
-        renderLista(data);
+        renderLista(data, tipoRegistro);
       } catch (err) {
         contenedorLista.innerHTML = `<p class="text-rose-400 text-sm text-center py-4">Error al cargar datos.</p>`;
       }
     }
 
-    function renderLista(data: any[]) {
+    function renderLista(
+      data: any[],
+      tipoRegistro: "categoria" | "cuenta",
+    ) {
       if (!contenedorLista) return;
 
       contenedorLista.innerHTML = data.map((mov: any) => `
@@ -82,6 +97,7 @@
           <!-- VISTA NORMAL DEL MOVIMIENTO -->
           <div id="vista-normal-${mov.id}" class="flex items-center justify-between gap-2">
             <div class="flex flex-col">
+              ${tipoRegistro === "cuenta" && (mov.concepto || mov.origen) ? `<span class="text-[10px] text-slate-400">${mov.concepto || mov.origen}</span>` : ''}
               <span class="text-[10px] text-slate-400">${mov.fecha} ${mov.subcategoria_id ? `• ${mov.subcategoria_id}` : ''}</span>
               <span class="font-semibold text-sm ${mov.tipo === 'Ingreso' ? 'text-emerald-400' : 'text-slate-200'}">
                 ${mov.tipo === 'Ingreso' ? '+' : '-'}${Number(mov.importe).toFixed(2)} €
@@ -96,7 +112,7 @@
                 ✏️
               </button>
               <button 
-                onclick="mostrarConfirmBorrar('${mov.id}')"
+                onclick="mostrarConfirmBorrar('${mov.id}', '${tipoRegistro}')"
                 class="px-2.5 py-1 bg-rose-600/20 hover:bg-rose-600/40 text-rose-400 text-xs font-medium rounded-xl border border-rose-500/30 transition"
               >
                 🗑️
@@ -116,7 +132,7 @@
                 class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
               />
               <button 
-                onclick="guardarEdicion('${mov.id}', '${mov.tipo}')"
+                onclick="guardarEdicion('${mov.id}', '${mov.tipo}', '${tipoRegistro}')"
                 class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl transition"
               >
                 Guardar
@@ -135,7 +151,7 @@
             <span class="text-[11px] font-semibold text-rose-400">¿Eliminar este movimiento?</span>
             <div class="flex items-center gap-2">
               <button 
-                onclick="confirmarBorrado('${mov.id}')"
+                onclick="confirmarBorrado('${mov.id}', '${tipoRegistro}')"
                 class="w-full py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-xl transition"
               >
                 Sí, borrar
@@ -175,34 +191,54 @@
     };
 
     // Peticiones a API
-    (window as any).guardarEdicion = async (id: string, tipo: string) => {
+    (window as any).guardarEdicion = async (
+      id: string,
+      tipo: string,
+      tipoRegistro: "categoria" | "cuenta" = tipoRegistroActual,
+    ) => {
       const input = document.getElementById(`input-importe-${id}`) as HTMLInputElement;
       const nuevoImporte = parseFloat(input?.value);
 
-      if (isNaN(nuevoImporte)) return;
+      if (isNaN(nuevoImporte)) {
+        window.alert("Introduce un importe válido.");
+        return;
+      }
 
       try {
         const res = await fetch('/api/movimientos', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id, importe: nuevoImporte, tipo })
+          body: JSON.stringify({ id, importe: nuevoImporte, tipo, tipoRegistro })
         });
-        if (res.ok) window.location.reload();
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          window.alert("No se pudo actualizar el movimiento.");
+        }
       } catch (err) {
         console.error("Error al actualizar", err);
+        window.alert("Error al actualizar el movimiento.");
       }
     };
 
-    (window as any).confirmarBorrado = async (id: string) => {
+    (window as any).confirmarBorrado = async (
+      id: string,
+      tipoRegistro: "categoria" | "cuenta" = tipoRegistroActual,
+    ) => {
       try {
         const res = await fetch('/api/movimientos', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id })
+          body: JSON.stringify({ id, tipoRegistro })
         });
-        if (res.ok) window.location.reload();
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          window.alert("No se pudo borrar el movimiento.");
+        }
       } catch (err) {
         console.error("Error al borrar", err);
+        window.alert("Error al borrar el movimiento.");
       }
     };
   }
