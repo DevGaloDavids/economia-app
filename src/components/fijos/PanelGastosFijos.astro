@@ -85,16 +85,15 @@ const {
                 {formatEuros(gasto.importeReal)}
               </span>
 
-              {!gasto.pagado ? (
-                <button
-                  type="button"
-                  class="btn-pagar"
-                  data-concepto-id={gasto.concepto}
-                  style="background: #dc2626; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-                >
-                  Pagar
-                </button>
-              ) : (
+              <button
+                type="button"
+                class={gasto.pagado ? "btn-devolver" : "btn-pagar"}
+                data-concepto-id={gasto.concepto}
+                style={`background: ${gasto.pagado ? "#475569" : "#dc2626"}; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;`}
+              >
+                {gasto.pagado ? "Devolver" : "Pagar"}
+              </button>
+              {gasto.pagado && (
                 <span style="font-size: 15px; color: #22c55e; font-weight: bold; width: 45px; text-align: center;">
                   ✓
                 </span>
@@ -116,10 +115,16 @@ const {
     background: #ef4444 !important;
     transform: scale(1.05);
   }
-  .btn-pagar:active {
+  .btn-devolver:hover {
+    background: #64748b !important;
+    transform: scale(1.05);
+  }
+  .btn-pagar:active,
+  .btn-devolver:active {
     transform: scale(0.95);
   }
-  .btn-pagar:disabled {
+  .btn-pagar:disabled,
+  .btn-devolver:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none !important;

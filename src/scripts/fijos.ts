@@ -1,9 +1,10 @@
 import { marcarGastoFijoComoPagado } from "../services/mutations";
 
-document.querySelectorAll(".btn-pagar").forEach((btn) => {
+document.querySelectorAll(".btn-pagar, .btn-devolver").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
     const target = e.currentTarget as HTMLButtonElement;
     const conceptoId = target.dataset.conceptoId;
+    const gastado = target.classList.contains("btn-pagar");
 
     if (!conceptoId) return;
 
@@ -12,12 +13,12 @@ document.querySelectorAll(".btn-pagar").forEach((btn) => {
     target.disabled = true;
 
     try {
-      await marcarGastoFijoComoPagado(conceptoId, true);
+      await marcarGastoFijoComoPagado(conceptoId, gastado);
       window.location.reload();
     } catch (error: any) {
-      console.error("Error al pagar:", error);
+      console.error("Error al actualizar el gasto fijo:", error);
       alert(
-        `Error al marcar como pagado ${conceptoId}: ${error.message || "Inténtalo de nuevo"}`,
+        `Error al ${gastado ? "marcar como pagado" : "devolver"} ${conceptoId}: ${error.message || "Inténtalo de nuevo"}`,
       );
       target.innerText = textoOriginal;
       target.disabled = false;
