@@ -4,10 +4,10 @@ import { formatEuros } from "../../utils/formatters";
 
 interface Props {
   restante: number;
-  ultimos5: Awaited<ReturnType<typeof getComprasData>>["ultimos5"];
+  porcentajes: Awaited<ReturnType<typeof getComprasData>>["porcentajes"];
 }
 
-const { restante, ultimos5 } = Astro.props;
+const { restante, porcentajes } = Astro.props;
 ---
 
 <div
@@ -53,40 +53,26 @@ const { restante, ultimos5 } = Astro.props;
       <span
         class="text-[11px] font-semibold text-emerald-400/90 uppercase tracking-wider block"
       >
-        Últimos movimientos
+        Desglose de gastos
       </span>
       <span class="text-[10px] text-emerald-500/70 underline">Gestionar</span>
     </div>
 
-    {
-      ultimos5 && ultimos5.length > 0 ? (
-        ultimos5.map((movimiento) => {
-          const esIngreso =
-            String(movimiento.tipo || "")
-              .trim()
-              .toLowerCase() === "ingreso";
-          return (
-            <div class="flex justify-between items-center text-xs">
-              <div class="flex items-center gap-2 truncate pr-2">
-                <span class="text-slate-400 text-[10px]">
-                  {movimiento.fecha}
-                </span>
-                <span class="text-slate-200 font-medium truncate">
-                  {movimiento.subcategoria_id || "Sin concepto"}
-                </span>
-              </div>
-              <span
-                class={`font-semibold shrink-0 ${esIngreso ? "text-emerald-400" : "text-slate-300"}`}
-              >
-                {esIngreso ? "+" : "-"}
-                {formatEuros(Number(movimiento.importe))}
-              </span>
-            </div>
-          );
-        })
-      ) : (
-        <p class="text-xs text-slate-500">Sin movimientos registrados</p>
-      )
-    }
+    <div class="flex justify-between items-center text-xs">
+      <span class="text-slate-200 font-medium">🍽️ Alimentacion</span>
+      <span class="font-semibold text-emerald-400">{porcentajes.alimentacion}%</span>
+    </div>
+    <div class="flex justify-between items-center text-xs">
+      <span class="text-slate-200 font-medium">💊 Suplementacion</span>
+      <span class="font-semibold text-emerald-400">{porcentajes.suplementacion}%</span>
+    </div>
+    <div class="flex justify-between items-center text-xs">
+      <span class="text-slate-200 font-medium">🩺 Salud</span>
+      <span class="font-semibold text-emerald-400">{porcentajes.salud}%</span>
+    </div>
+    <div class="flex justify-between items-center text-xs">
+      <span class="text-slate-200 font-medium">🏠 Hogar</span>
+      <span class="font-semibold text-emerald-400">{porcentajes.hogar}%</span>
+    </div>
   </div>
 </div>

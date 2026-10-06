@@ -11,7 +11,7 @@ import {
 
 export const prerender = false;
 
-const { restanteCompras, ultimos5 } = await getComprasData();
+const { restanteCompras, porcentajes: porcentajesCompras } = await getComprasData();
 const { restanteTransporte, porcentajes } = await getTransporteData();
 const { restante: restanteBarberia } = await getAcumuladoData("Barberia");
 const { restante: restanteLimpieza } = await getAcumuladoData("Limpieza");
@@ -19,16 +19,19 @@ const { restante: restanteLimpieza } = await getAcumuladoData("Limpieza");
 
 <MainLayout title="Compras - Mi Economía" activeTab="compras">
   <div class="space-y-4">
-    <TarjetaCompras restante={restanteCompras} ultimos5={ultimos5} />
+    <TarjetaCompras
+      restante={restanteCompras}
+      porcentajes={porcentajesCompras}
+    />
+    <TarjetaDesgloseTransporte
+      restante={restanteTransporte}
+      porcentajes={porcentajes}
+    />
   </div>
 
   <div
     style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;"
   >
-    <TarjetaDesgloseTransporte
-      restante={restanteTransporte}
-      porcentajes={porcentajes}
-    />
     <TarjetaAvisoCompra
       icono="💈"
       nombre="Barbería"

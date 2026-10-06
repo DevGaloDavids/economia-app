@@ -175,16 +175,41 @@ export async function getComprasData() {
 
   const todos = movsCompras || [];
 
-  console.log(todos)
+  let totalGastos = 0;
+  const desgloseGastos: Record<string, number> = {
+    Alimentacion: 0,
+    Suplementacion: 0,
+    Salud: 0,
+    Hogar: 0,
+  };
 
   const restanteCompras = todos.reduce((acc, m) => {
     const cantidad = Number(m.importe) || 0;
-    return m.tipo === "Ingreso" ? acc + cantidad : acc - cantidad;
+    if (m.tipo === "Ingreso") return acc + cantidad;
+
+    totalGastos += cantidad;
+    if (m.subcategoria_id && m.subcategoria_id in desgloseGastos) {
+      desgloseGastos[m.subcategoria_id] += cantidad;
+    }
+    return acc - cantidad;
   }, 0);
 
-  const ultimos5 = todos.slice(0, 5);
+  const porcentajes = {
+    alimentacion: totalGastos > 0
+      ? Math.round((desgloseGastos.Alimentacion / totalGastos) * 100)
+      : 0,
+    suplementacion: totalGastos > 0
+      ? Math.round((desgloseGastos.Suplementacion / totalGastos) * 100)
+      : 0,
+    salud: totalGastos > 0
+      ? Math.round((desgloseGastos.Salud / totalGastos) * 100)
+      : 0,
+    hogar: totalGastos > 0
+      ? Math.round((desgloseGastos.Hogar / totalGastos) * 100)
+      : 0,
+  };
 
-  return { restanteCompras, ultimos5 };
+  return { restanteCompras, porcentajes };
 }
 
 // 6. Obtener datos para la tarjeta de Transporte
