@@ -5,7 +5,7 @@ import type { generateSVGPath } from "../../utils/chart";
 
 interface Props extends ConfiguracionCartera {
   saldoActual: number;
-  historial10: { importe: number; fecha: string }[];
+  historial50: { importe: number; fecha: string }[];
   chart: ReturnType<typeof generateSVGPath>;
 }
 
@@ -20,7 +20,7 @@ const {
   stopColor,
   gradId,
   saldoActual,
-  historial10,
+  historial50,
   chart,
 } = Astro.props;
 
@@ -46,7 +46,7 @@ const saldoFormateado = formatEuros(saldoActual);
     <span
       class={`text-[10px] px-2.5 py-1 rounded-full border font-medium ${badgeClass}`}
     >
-      Últimos 10 registros
+      Últimos 50 registros
     </span>
   </div>
 
@@ -61,7 +61,7 @@ const saldoFormateado = formatEuros(saldoActual);
   </div>
 
   {
-    historial10.length > 1 ? (
+    historial50.length > 1 ? (
       <div class="pt-2 border-t border-slate-800/80 relative">
         <svg viewBox="0 0 320 60" class="w-full h-16 overflow-visible">
           <defs>

@@ -10,7 +10,7 @@ export const prerender = false;
 const tarjetasData = await Promise.all(
   configuracionCarteras.map(async (configuracion) => {
     const data = await getTarjetaData(configuracion.nombre);
-    const chart = generateSVGPath(data.historial10, 320, 60);
+    const chart = generateSVGPath(data.historial50, 320, 60);
 
     return { ...configuracion, ...data, chart };
   }),

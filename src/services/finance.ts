@@ -3,7 +3,14 @@ import { formatYearMonth, formatShortMonth } from "../utils/formatters";
 
 // CONFIGURACIONES FIJAS
 const CUENTAS_ULTIMO_SALDO = ["Revolut C.P.", "Revolut C.R.", "Axa"];
-const ORDEN_CUENTAS = ["Revolut C.P.", "Revolut C.R.", "Pulse", "Trade", "Axa"];
+const ORDEN_CUENTAS = [
+  "Revolut C.P.",
+  "Revolut C.R.",
+  "Efectivo",
+  "Pulse",
+  "Trade",
+  "Axa",
+];
 
 // 1. Obtener patrimonio por cuentas
 export async function getPatrimonioData() {
@@ -104,7 +111,7 @@ export async function getGastosPendientesData() {
   }));
 }
 
-// 4. Obtener los últimos 10 registros de cualquier cuenta
+// 4. Obtener los últimos 50 registros de cualquier cuenta
 export async function getTarjetaData(nombreCuenta: string) {
   const { data: registros } = await supabase
     .from("Cuentas")
@@ -115,19 +122,19 @@ export async function getTarjetaData(nombreCuenta: string) {
 
   const lista = registros || [];
   if (lista.length === 0) {
-    return { saldoActual: 0, historial10: [] };
+    return { saldoActual: 0, historial50: [] };
   }
 
   const esUltimoSaldo = CUENTAS_ULTIMO_SALDO.includes(nombreCuenta);
 
   let saldoActual = 0;
-  let historial10: { importe: number; fecha: string }[] = [];
+  let historial50: { importe: number; fecha: string }[] = [];
 
   if (esUltimoSaldo) {
     // Al estar ordenado por fecha + created_at descendente, el índice 0 es el verdaderamente más reciente
     saldoActual = Number(lista[0].importe) || 0;
 
-    historial10 = lista.slice(0, 10).reverse().map((reg) => ({
+    historial50 = lista.slice(0, 50).reverse().map((reg) => ({
       importe: Number(reg.importe) || 0,
       fecha: reg.fecha,
     }));
@@ -151,10 +158,10 @@ export async function getTarjetaData(nombreCuenta: string) {
     });
 
     saldoActual = saldoAcumulado;
-    historial10 = historialEvolucion.slice(-10);
+    historial50 = historialEvolucion.slice(-50);
   }
 
-  return { saldoActual, historial10 };
+  return { saldoActual, historial50 };
 }
 
 // 5. Obtener datos para la tarjeta principal de Compras

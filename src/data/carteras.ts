@@ -36,6 +36,18 @@ export const configuracionCarteras: ConfiguracionCartera[] = [
     gradId: "amberGrad",
   },
   {
+    nombre: "Efectivo",
+    icono: "💵",
+    gradientClass:
+      "from-emerald-950/40 via-slate-900 to-slate-900 border-emerald-700/40",
+    glowClass: "bg-emerald-500/15",
+    textClass: "text-emerald-400",
+    badgeClass: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+    strokeColor: "#34d399",
+    stopColor: "#10b981",
+    gradId: "emeraldGrad",
+  },
+  {
     nombre: "Trade",
     icono: "📈",
     gradientClass:
