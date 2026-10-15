@@ -3,6 +3,7 @@ interface Props {
   activeTab:
     | "inicio"
     | "carteras"
+    | "inversiones"
     | "compras"
     | "servicios"
     | "acumulados"
@@ -14,6 +15,7 @@ const { activeTab } = Astro.props;
 const tabs = [
   { id: "inicio", label: "Inicio", icon: "🏠", href: "/" },
   { id: "carteras", label: "Carteras", icon: "💼", href: "/carteras" },
+  { id: "inversiones", label: "Inversiones", icon: "📊", href: "/inversiones" },
   { id: "compras", label: "Compras", icon: "🛒", href: "/compras" },
   { id: "servicios", label: "Servicios", icon: "⚡", href: "/servicios" },
   { id: "acumulados", label: "Acumulados", icon: "📈", href: "/acumulados" },
