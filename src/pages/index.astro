@@ -10,7 +10,11 @@ import { formatEuros } from "../utils/formatters";
 
 export const prerender = false;
 
-const { patrimonioTotal, listaCuentasDesglose } = await getPatrimonioData();
+const {
+  patrimonioTotal,
+  listaCuentasDesglose,
+  listaInversionesDesglose,
+} = await getPatrimonioData();
 const { balanceTotalFinal, disponibleCompras } = await getBalanceData();
 const gastosPendientes = await getGastosPendientesData();
 const { restanteTransporte } = await getTransporteData();
@@ -37,11 +41,18 @@ const { restanteTransporte } = await getTransporteData();
       </div>
 
       <div class="flex items-center gap-2">
-        <span
-          class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium"
-        >
-          Carteras
-        </span>
+        <div class="flex gap-2">
+          <span
+            class="text-xs bg-purple-500/15 text-purple-300 px-2.5 py-1 rounded-full border border-purple-500/30 font-medium"
+          >
+            Carteras
+          </span>
+          <span
+            class="text-xs bg-blue-500/15 text-blue-300 px-2.5 py-1 rounded-full border border-blue-500/30 font-medium"
+          >
+            Inversiones
+          </span>
+        </div>
       </div>
     </div>
 
@@ -54,12 +65,15 @@ const { restanteTransporte } = await getTransporteData();
         {formatEuros(patrimonioTotal)}
       </div>
       <p class="text-xs text-slate-400">
-        Total acumulado en tus cuentas activas
+        Total acumulado en tus cuentas e inversiones
       </p>
     </div>
 
     <!-- DESGLOSE DE CUENTAS -->
     <div class="space-y-2.5 pt-4 border-t border-purple-900/40">
+      <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        Cuentas
+      </p>
       {
         listaCuentasDesglose.length > 0 ? (
           listaCuentasDesglose.map((item) => (
@@ -78,6 +92,32 @@ const { restanteTransporte } = await getTransporteData();
           ))
         ) : (
           <p class="text-xs text-slate-500">Sin cuentas registradas</p>
+        )
+      }
+    </div>
+
+    <div class="space-y-2.5 pt-4 border-t border-purple-900/40">
+      <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        Inversiones
+      </p>
+      {
+        listaInversionesDesglose.length > 0 ? (
+          listaInversionesDesglose.map((item) => (
+            <div class="flex justify-between items-center text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-xs">📈</span>
+                <span class="text-slate-300 font-medium">{item.nombre}</span>
+              </div>
+              <span
+                class="monto-privado font-semibold text-slate-100 font-mono"
+                data-valor={formatEuros(item.saldo)}
+              >
+                {formatEuros(item.saldo)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p class="text-xs text-slate-500">Sin inversiones registradas</p>
         )
       }
     </div>

@@ -1,6 +1,26 @@
 ---
+import TarjetaCartera from "../components/carteras/TarjetaCartera.astro";
 import MainLayout from "../layouts/MainLayout.astro";
+import { configuracionInversiones } from "../data/inversiones";
+import { getTarjetaInversionData } from "../services/finance";
+import { generateSVGPath } from "../utils/chart";
+
+export const prerender = false;
+
+const tarjetasData = await Promise.all(
+  configuracionInversiones.map(async (configuracion) => {
+    const data = await getTarjetaInversionData(configuracion.nombre);
+    const chart = generateSVGPath(data.historial50, 320, 60);
+
+    return { ...configuracion, ...data, chart };
+  }),
+);
 ---
 
 <MainLayout title="Inversiones - Mi Economía" activeTab="inversiones">
+  <div class="space-y-4">
+    {tarjetasData.map((tarjeta) => (
+      <TarjetaCartera {...tarjeta} gestionable={false} />
+    ))}
+  </div>
 </MainLayout>

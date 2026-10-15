@@ -7,6 +7,7 @@ interface Props extends ConfiguracionCartera {
   saldoActual: number;
   historial50: { importe: number; fecha: string }[];
   chart: ReturnType<typeof generateSVGPath>;
+  gestionable?: boolean;
 }
 
 const {
@@ -22,14 +23,15 @@ const {
   saldoActual,
   historial50,
   chart,
+  gestionable = true,
 } = Astro.props;
 
 const saldoFormateado = formatEuros(saldoActual);
 ---
 
 <div
-  onclick={`window.abrirModalGestion && window.abrirModalGestion('${nombre}', 'cuenta')`}
-  class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden cursor-pointer hover:brightness-110 transition-all duration-200 active:scale-[0.99]`}
+  onclick={gestionable ? `window.abrirModalGestion && window.abrirModalGestion('${nombre}', 'cuenta')` : undefined}
+  class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden ${gestionable ? "cursor-pointer" : ""} hover:brightness-110 transition-all duration-200 active:scale-[0.99]`}
 >
   <div
     class={`absolute -top-10 -right-10 w-32 h-32 ${glowClass} rounded-full blur-2xl pointer-events-none`}

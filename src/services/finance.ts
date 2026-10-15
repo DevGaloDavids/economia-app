@@ -9,22 +9,37 @@ const ORDEN_CUENTAS = [
   "Efectivo",
   "Pulse",
   "Trade",
-  "Axa",
 ];
 
-// 1. Obtener patrimonio por cuentas
+// 1. Obtener el patrimonio de cuentas e inversiones
 export async function getPatrimonioData() {
-  // Ordenamos por fecha descendente y por created_at (o id si fuera int) como desempate
-  const { data: registrosCuentas } = await supabase
-    .from("Cuentas")
-    .select("cuenta_id, importe, fecha, tipo")
-    .order("fecha", { ascending: false })
-    .order("created_at", { ascending: false }); // 👈 Desempate por timestamp preciso
+  const [
+    { data: registrosCuentas, error: errorCuentas },
+    { data: registrosInversiones, error: errorInversiones },
+  ] = await Promise.all([
+    supabase
+      .from("Cuentas")
+      .select("cuenta_id, importe, fecha, tipo")
+      .order("fecha", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("Inversiones")
+      .select("cuenta_id, importe, fecha, tipo")
+      .eq("tipo", "Valor")
+      .order("fecha", { ascending: false })
+      .order("created_at", { ascending: false }),
+  ]);
 
-  const cuentasData = registrosCuentas || [];
+  if (errorCuentas) {
+    throw new Error(`Error obteniendo cuentas para el patrimonio: ${errorCuentas.message}`);
+  }
+  if (errorInversiones) {
+    throw new Error(`Error obteniendo inversiones para el patrimonio: ${errorInversiones.message}`);
+  }
+
   const saldosPorCuenta: Record<string, number> = {};
 
-  cuentasData.forEach((reg) => {
+  (registrosCuentas || []).filter((reg) => reg.cuenta_id !== "Axa").forEach((reg) => {
     const nombreCuenta = reg.cuenta_id;
     const cantidad = Number(reg.importe) || 0;
     const tipo = reg.tipo;
@@ -47,6 +62,14 @@ export async function getPatrimonioData() {
     }
   });
 
+  const saldosPorInversion: Record<string, number> = {};
+  (registrosInversiones || []).forEach((reg) => {
+    const nombreInversion = reg.cuenta_id;
+    if (saldosPorInversion[nombreInversion] === undefined) {
+      saldosPorInversion[nombreInversion] = Number(reg.importe) || 0;
+    }
+  });
+
   const listaCuentasDesglose = Object.entries(saldosPorCuenta)
     .map(([nombre, saldo]) => ({ nombre, saldo }))
     .sort((a, b) => {
@@ -55,12 +78,24 @@ export async function getPatrimonioData() {
       return (posA === -1 ? 99 : posA) - (posB === -1 ? 99 : posB);
     });
 
-  const patrimonioTotal = Object.values(saldosPorCuenta).reduce(
+  const listaInversionesDesglose = Object.entries(saldosPorInversion)
+    .map(([nombre, saldo]) => ({ nombre, saldo }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  const patrimonioCuentas = Object.values(saldosPorCuenta).reduce(
+    (acc, saldo) => acc + saldo,
+    0
+  );
+  const patrimonioInversiones = Object.values(saldosPorInversion).reduce(
     (acc, saldo) => acc + saldo,
     0
   );
 
-  return { patrimonioTotal, listaCuentasDesglose };
+  return {
+    patrimonioTotal: patrimonioCuentas + patrimonioInversiones,
+    listaCuentasDesglose,
+    listaInversionesDesglose,
+  };
 }
 
 // 2. Obtener balance total y remanente de compras
@@ -162,6 +197,35 @@ export async function getTarjetaData(nombreCuenta: string) {
   }
 
   return { saldoActual, historial50 };
+}
+
+export async function getTarjetaInversionData(nombreInversion: string) {
+  const { data: registros, error } = await supabase
+    .from("Inversiones")
+    .select("importe, fecha, tipo")
+    .eq("cuenta_id", nombreInversion)
+    .eq("tipo", "Valor")
+    .order("fecha", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(
+      `Error obteniendo los datos de la inversión ${nombreInversion}: ${error.message}`
+    );
+  }
+
+  const lista = registros || [];
+  if (lista.length === 0) {
+    return { saldoActual: 0, historial50: [] };
+  }
+
+  return {
+    saldoActual: Number(lista[0].importe) || 0,
+    historial50: lista.slice(0, 50).reverse().map((reg) => ({
+      importe: Number(reg.importe) || 0,
+      fecha: reg.fecha,
+    })),
+  };
 }
 
 // 5. Obtener datos para la tarjeta principal de Compras
