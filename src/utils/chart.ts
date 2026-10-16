@@ -1,27 +1,59 @@
-export function generateSVGPath(data: { importe: number }[], width = 300, height = 60) {
+interface SVGPathData {
+  path: string;
+  areaPath: string;
+  lastPoint?: { x: number; y: number };
+  comparisonPath?: string;
+  comparisonLastPoint?: { x: number; y: number };
+}
+
+export function generateSVGPath(
+  data: { importe: number; comparison?: number }[],
+  width = 300,
+  height = 60
+): SVGPathData {
   if (!data || data.length < 2) return { path: "", areaPath: "" };
 
-  const values = data.map((d) => Number(d.importe));
+  const values = data.flatMap((point) =>
+    point.comparison === undefined
+      ? [Number(point.importe)]
+      : [Number(point.importe), Number(point.comparison)]
+  );
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min === 0 ? 1 : max - min;
 
-  // Calculamos las coordenadas de cada punto dentro del SVG
-  const points = values.map((val, idx) => {
-    const x = (idx / (values.length - 1)) * width;
-    // Margen superior e inferior de 8px para que la línea no se corte
+  const createPoints = (series: number[]) => series.map((val, idx) => {
+    const x = (idx / (data.length - 1)) * width;
     const y = height - 8 - ((val - min) / range) * (height - 16);
     return { x, y };
   });
 
-  // Crear la línea principal
+  const mainValues = data.map((point) => Number(point.importe));
+  const points = createPoints(mainValues);
   const path = points.reduce(
     (acc, pt, i) => (i === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`),
     ""
   );
 
-  // Crear la ruta del área sombreada por debajo de la línea
   const areaPath = `${path} L ${width},${height} L 0,${height} Z`;
 
-  return { path, areaPath, lastPoint: points[points.length - 1] };
+  const comparisonValues = data.flatMap((point) =>
+    point.comparison === undefined ? [] : [Number(point.comparison)]
+  );
+  const comparisonPoints =
+    comparisonValues.length === data.length ? createPoints(comparisonValues) : [];
+  const comparisonPath = comparisonPoints.reduce(
+    (acc, pt, i) => (i === 0 ? `M ${pt.x},${pt.y}` : `${acc} L ${pt.x},${pt.y}`),
+    ""
+  );
+
+  return {
+    path,
+    areaPath,
+    lastPoint: points[points.length - 1],
+    ...(comparisonPath && {
+      comparisonPath,
+      comparisonLastPoint: comparisonPoints[comparisonPoints.length - 1],
+    }),
+  };
 }

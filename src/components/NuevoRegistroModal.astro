@@ -20,7 +20,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
           <span>💳</span> Nuevo Saldo / Movimiento
         </h3>
-        <p class="text-xs text-slate-400">Actualizar registros de la tabla Cuentas</p>
+        <p id="texto-tabla-registro" class="text-xs text-slate-400">Actualizar registros de la tabla Cuentas</p>
       </div>
       <button 
         id="btn-cerrar-modal" 
@@ -153,10 +153,13 @@ const fechaHoy = new Date().toISOString().split("T")[0];
 </style>
 
 <script>
-  import { insertRegistroCuenta } from "../services/mutations";
+  import {
+    insertRegistroCuenta,
+    insertRegistroInversion,
+  } from "../services/mutations";
 
   // Cuentas donde sólo se guarda el último saldo
-  const CUENTAS_ULTIMO_SALDO = ["Revolut C.P.", "Revolut C.R.", "Axa"];
+  const CUENTAS_ULTIMO_SALDO = ["Revolut C.P.", "Revolut C.R."];
 
   const modal = document.getElementById("modal-actualizar-cuenta");
   const btnCerrar = document.getElementById("btn-cerrar-modal");
@@ -164,6 +167,7 @@ const fechaHoy = new Date().toISOString().split("T")[0];
   const selectCuenta = document.getElementById("select-cuenta") as HTMLSelectElement;
   const selectOrigen = document.getElementById("select-origen") as HTMLSelectElement;
   const selectTipo = document.getElementById("select-tipo") as HTMLSelectElement;
+  const textoTablaRegistro = document.getElementById("texto-tabla-registro");
   const contenedorConcepto = document.getElementById("contenedor-concepto");
   const inputConcepto = document.getElementById("input-concepto") as HTMLInputElement;
   const msgEstado = document.getElementById("msg-estado");
@@ -173,18 +177,30 @@ const fechaHoy = new Date().toISOString().split("T")[0];
   const actualizarReglasCuenta = () => {
     if (!selectCuenta || !selectOrigen || !selectTipo) return;
 
+    const esInversion = selectCuenta.value === "Axa";
     const esUltimoSaldo = CUENTAS_ULTIMO_SALDO.includes(selectCuenta.value);
 
-    if (esUltimoSaldo) {
+    if (textoTablaRegistro) {
+      textoTablaRegistro.textContent = esInversion
+        ? "Actualizar registros de la tabla Inversiones"
+        : "Actualizar registros de la tabla Cuentas";
+    }
+
+    selectTipo.innerHTML = esInversion
+      ? '<option value="Ingreso">Ingreso</option><option value="Valor">Valor</option>'
+      : '<option value="Ingreso">Ingreso</option><option value="Gasto">Gasto</option>';
+    if (!Array.from(selectTipo.options).some((option) => option.value === selectTipo.value)) {
+      selectTipo.value = "Ingreso";
+    }
+
+    if (esUltimoSaldo || esInversion) {
       // Bloquear Origen a "Personal"
       selectOrigen.value = "Personal";
       selectOrigen.disabled = true;
 
-      // Bloquear Tipo a "Ingreso"
-      selectTipo.value = "Ingreso";
-      selectTipo.disabled = true;
+      // Las cuentas de saldo único fijan el tipo; Axa permite elegir Ingreso o Valor.
+      selectTipo.disabled = esUltimoSaldo && !esInversion;
 
-      // Ocultar y limpiar concepto si estaba abierto
       contenedorConcepto?.classList.add("hidden");
       inputConcepto.value = "";
     } else {
@@ -254,16 +270,38 @@ const fechaHoy = new Date().toISOString().split("T")[0];
       // Al estar deshabilitados en el HTML, los elementos disabled no se incluyen automáticamente en FormData,
       // por lo que los leemos directamente de la propiedad .value del elemento para garantizar el dato exacto:
       const origenVal = selectOrigen.disabled ? selectOrigen.value : (formData.get("origen") as string);
-      const tipoVal = (selectTipo.disabled ? selectTipo.value : formData.get("tipo")) as "Ingreso" | "Gasto";
+      const cuentaId = formData.get("cuenta_id") as string;
+      const tipoVal = (selectTipo.disabled ? selectTipo.value : formData.get("tipo")) as
+        | "Ingreso"
+        | "Gasto"
+        | "Valor";
 
-      await insertRegistroCuenta({
-        cuenta_id: formData.get("cuenta_id") as string,
-        origen: origenVal,
-        importe: importeParsed,
-        fecha: formData.get("fecha") as string,
-        tipo: tipoVal,
-        concepto: tipoVal === "Gasto" ? (formData.get("concepto") as string) : null,
-      });
+      if (cuentaId === "Axa") {
+        if (tipoVal !== "Ingreso" && tipoVal !== "Valor") {
+          throw new Error("El tipo de registro de una inversión no es válido.");
+        }
+
+        await insertRegistroInversion({
+          cuenta_id: cuentaId,
+          origen: origenVal,
+          importe: importeParsed,
+          fecha: formData.get("fecha") as string,
+          tipo: tipoVal,
+        });
+      } else {
+        if (tipoVal !== "Ingreso" && tipoVal !== "Gasto") {
+          throw new Error("El tipo de movimiento de la cuenta no es válido.");
+        }
+
+        await insertRegistroCuenta({
+          cuenta_id: cuentaId,
+          origen: origenVal,
+          importe: importeParsed,
+          fecha: formData.get("fecha") as string,
+          tipo: tipoVal,
+          concepto: tipoVal === "Gasto" ? (formData.get("concepto") as string) : null,
+        });
+      }
 
       msgEstado.textContent = "✓ ¡Registro añadido con éxito!";
       msgEstado.className = "text-xs text-center font-semibold text-emerald-400 block";

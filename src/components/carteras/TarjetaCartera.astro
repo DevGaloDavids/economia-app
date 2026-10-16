@@ -5,9 +5,11 @@ import type { generateSVGPath } from "../../utils/chart";
 
 interface Props extends ConfiguracionCartera {
   saldoActual: number;
-  historial50: { importe: number; fecha: string }[];
+  historial50: { importe: number; fecha: string; comparison?: number }[];
   chart: ReturnType<typeof generateSVGPath>;
   gestionable?: boolean;
+  tipoGestion?: "cuenta" | "inversion";
+  totalInvertido?: number;
 }
 
 const {
@@ -24,13 +26,18 @@ const {
   historial50,
   chart,
   gestionable = true,
+  tipoGestion = "cuenta",
+  totalInvertido,
 } = Astro.props;
 
 const saldoFormateado = formatEuros(saldoActual);
+const invertidoFormateado =
+  totalInvertido === undefined ? undefined : formatEuros(totalInvertido);
+const nombreSeguro = JSON.stringify(nombre);
 ---
 
 <div
-  onclick={gestionable ? `window.abrirModalGestion && window.abrirModalGestion('${nombre}', 'cuenta')` : undefined}
+  onclick={gestionable ? `window.abrirModalGestion && window.abrirModalGestion(${nombreSeguro}, '${tipoGestion}')` : undefined}
   class={`bg-gradient-to-br ${gradientClass} border rounded-3xl p-6 shadow-2xl relative overflow-hidden ${gestionable ? "cursor-pointer" : ""} hover:brightness-110 transition-all duration-200 active:scale-[0.99]`}
 >
   <div
@@ -65,6 +72,21 @@ const saldoFormateado = formatEuros(saldoActual);
   {
     historial50.length > 1 ? (
       <div class="pt-2 border-t border-slate-800/80 relative">
+        {chart.comparisonPath && (
+          <div class="flex gap-4 mb-1 text-[10px] text-slate-400">
+            <span class="flex items-center gap-1.5">
+              <span
+                class="w-2 h-2 rounded-full"
+                style={`background-color: ${strokeColor}`}
+              />
+              Valor de cartera
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-white" />
+              Total invertido
+            </span>
+          </div>
+        )}
         <svg viewBox="0 0 320 60" class="w-full h-16 overflow-visible">
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -83,6 +105,17 @@ const saldoFormateado = formatEuros(saldoActual);
             stroke-linejoin="round"
           />
 
+          {chart.comparisonPath && (
+            <path
+              d={chart.comparisonPath}
+              fill="none"
+              stroke="#ffffff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          )}
+
           {chart.lastPoint && (
             <circle
               cx={chart.lastPoint.x}
@@ -92,7 +125,20 @@ const saldoFormateado = formatEuros(saldoActual);
               class="animate-pulse"
             />
           )}
+          {chart.comparisonLastPoint && (
+            <circle
+              cx={chart.comparisonLastPoint.x}
+              cy={chart.comparisonLastPoint.y}
+              r="3"
+              fill="#ffffff"
+            />
+          )}
         </svg>
+        {invertidoFormateado && (
+          <p class="text-[10px] text-slate-400 text-right mt-1">
+            Total invertido: <span class="text-white font-mono">{invertidoFormateado}</span>
+          </p>
+        )}
       </div>
     ) : (
       <p class="text-xs text-slate-500 pt-3 border-t border-slate-800/80">

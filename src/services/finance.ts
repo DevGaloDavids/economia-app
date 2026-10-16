@@ -202,11 +202,11 @@ export async function getTarjetaData(nombreCuenta: string) {
 export async function getTarjetaInversionData(nombreInversion: string) {
   const { data: registros, error } = await supabase
     .from("Inversiones")
-    .select("importe, fecha, tipo")
+    .select("importe, fecha, tipo, created_at")
     .eq("cuenta_id", nombreInversion)
-    .eq("tipo", "Valor")
-    .order("fecha", { ascending: false })
-    .order("created_at", { ascending: false });
+    .in("tipo", ["Valor", "Ingreso"])
+    .order("fecha", { ascending: true })
+    .order("created_at", { ascending: true });
 
   if (error) {
     throw new Error(
@@ -214,17 +214,38 @@ export async function getTarjetaInversionData(nombreInversion: string) {
     );
   }
 
-  const lista = registros || [];
-  if (lista.length === 0) {
-    return { saldoActual: 0, historial50: [] };
+  let saldoActual = 0;
+  let ultimoValor: number | undefined;
+  let totalInvertido = 0;
+  const historial: {
+    importe: number;
+    comparison: number;
+    fecha: string;
+  }[] = [];
+
+  for (const registro of registros || []) {
+    const importe = Number(registro.importe) || 0;
+
+    if (registro.tipo === "Ingreso") {
+      totalInvertido += importe;
+    } else if (registro.tipo === "Valor") {
+      ultimoValor = importe;
+      saldoActual = importe;
+    }
+
+    if (ultimoValor !== undefined) {
+      historial.push({
+        importe: ultimoValor,
+        comparison: totalInvertido,
+        fecha: registro.fecha,
+      });
+    }
   }
 
   return {
-    saldoActual: Number(lista[0].importe) || 0,
-    historial50: lista.slice(0, 50).reverse().map((reg) => ({
-      importe: Number(reg.importe) || 0,
-      fecha: reg.fecha,
-    })),
+    saldoActual,
+    totalInvertido,
+    historial50: historial.slice(-50),
   };
 }
 

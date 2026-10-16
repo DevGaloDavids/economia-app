@@ -35,7 +35,8 @@
     const btnCerrar = document.getElementById("btn-cerrar-modal-gestion");
     const contenedorLista = document.getElementById("contenedor-lista-movimientos");
     const textoTitulo = document.getElementById("texto-titulo");
-    let tipoRegistroActual: "categoria" | "cuenta" = "categoria";
+    type TipoRegistro = "categoria" | "cuenta" | "inversion";
+    let tipoRegistroActual: TipoRegistro = "categoria";
 
     if (!modal) return;
 
@@ -51,7 +52,7 @@
 
     (window as any).abrirModalGestion = async (
       categoria: string,
-      tipoRegistro: "categoria" | "cuenta" = "categoria",
+      tipoRegistro: TipoRegistro = "categoria",
     ) => {
       tipoRegistroActual = tipoRegistro;
       if (textoTitulo) textoTitulo.textContent = `Movimientos: ${categoria}`;
@@ -61,13 +62,18 @@
 
     async function cargarMovimientos(
       categoria: string,
-      tipoRegistro: "categoria" | "cuenta",
+      tipoRegistro: TipoRegistro,
     ) {
       if (!contenedorLista) return;
       contenedorLista.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">Cargando...</p>`;
 
       try {
-        const filtro = tipoRegistro === "cuenta" ? "cuenta" : "categoria";
+        const filtro =
+          tipoRegistro === "cuenta"
+            ? "cuenta"
+            : tipoRegistro === "inversion"
+              ? "inversion"
+              : "categoria";
         const res = await fetch(
           `/api/movimientos?${filtro}=${encodeURIComponent(categoria)}`,
         );
@@ -87,7 +93,7 @@
 
     function renderLista(
       data: any[],
-      tipoRegistro: "categoria" | "cuenta",
+      tipoRegistro: TipoRegistro,
     ) {
       if (!contenedorLista) return;
 
@@ -98,9 +104,10 @@
           <div id="vista-normal-${mov.id}" class="flex items-center justify-between gap-2">
             <div class="flex flex-col">
               ${tipoRegistro === "cuenta" && (mov.concepto || mov.origen) ? `<span class="text-[10px] text-slate-400">${mov.concepto || mov.origen}</span>` : ''}
+              ${tipoRegistro === "inversion" && (mov.Origen || mov.origen) ? `<span class="text-[10px] text-slate-400">${mov.Origen || mov.origen}</span>` : ''}
               <span class="text-[10px] text-slate-400">${mov.fecha} ${mov.subcategoria_id ? `• ${mov.subcategoria_id}` : ''}</span>
               <span class="font-semibold text-sm ${mov.tipo === 'Ingreso' ? 'text-emerald-400' : 'text-slate-200'}">
-                ${mov.tipo === 'Ingreso' ? '+' : '-'}${Number(mov.importe).toFixed(2)} €
+                ${mov.tipo === 'Ingreso' ? '+' : mov.tipo === 'Gasto' ? '-' : ''}${Number(mov.importe).toFixed(2)} €${tipoRegistro === 'inversion' ? ` · ${mov.tipo}` : ''}
               </span>
             </div>
             
@@ -194,7 +201,7 @@
     (window as any).guardarEdicion = async (
       id: string,
       tipo: string,
-      tipoRegistro: "categoria" | "cuenta" = tipoRegistroActual,
+      tipoRegistro: TipoRegistro = tipoRegistroActual,
     ) => {
       const input = document.getElementById(`input-importe-${id}`) as HTMLInputElement;
       const nuevoImporte = parseFloat(input?.value);
@@ -223,7 +230,7 @@
 
     (window as any).confirmarBorrado = async (
       id: string,
-      tipoRegistro: "categoria" | "cuenta" = tipoRegistroActual,
+      tipoRegistro: TipoRegistro = tipoRegistroActual,
     ) => {
       try {
         const res = await fetch('/api/movimientos', {

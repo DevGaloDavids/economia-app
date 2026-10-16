@@ -32,6 +32,36 @@ export async function insertRegistroCuenta(registro: NuevoRegistroCuenta) {
   return data;
 }
 
+export interface NuevoRegistroInversion {
+  cuenta_id: string;
+  origen: string;
+  importe: number;
+  fecha: string;
+  tipo: "Ingreso" | "Valor";
+}
+
+export async function insertRegistroInversion(registro: NuevoRegistroInversion) {
+  const { data, error } = await supabase
+    .from("Inversiones")
+    .insert([
+      {
+        cuenta_id: registro.cuenta_id,
+        Origen: registro.origen,
+        importe: registro.importe,
+        fecha: registro.fecha,
+        tipo: registro.tipo,
+      },
+    ])
+    .select();
+
+  if (error) {
+    console.error("Error insertando en Inversiones:", error);
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
 export interface NuevoMovimiento {
   categoria_id: string;
   subcategoria_id?: string | null;
