@@ -84,6 +84,77 @@ export async function insertRegistroMovimiento(movimiento: NuevoMovimiento) {
 }
 
 export async function marcarGastoFijoComoPagado(conceptoId: string, gastado: boolean = true) {
+  if (conceptoId === "Pago moto" && gastado) {
+    const { data: gastoFijo, error: errorGastoFijo } = await supabase
+      .from("GastosFijos")
+      .select("cantidad, gastado")
+      .eq("concepto_id", conceptoId)
+      .maybeSingle();
+
+    if (errorGastoFijo) {
+      throw new Error(
+        `Error consultando el gasto fijo ${conceptoId}: ${errorGastoFijo.message}`,
+      );
+    }
+    if (!gastoFijo) {
+      throw new Error(`No se encontró el gasto fijo ${conceptoId}.`);
+    }
+    if (gastoFijo.gastado) {
+      return [gastoFijo];
+    }
+
+    const importe = Number(gastoFijo.cantidad);
+    if (!Number.isFinite(importe) || importe <= 0) {
+      throw new Error(
+        `El importe del gasto fijo ${conceptoId} no es válido.`,
+      );
+    }
+
+    const { data: movimiento, error: errorMovimiento } = await supabase
+      .from("Movimientos")
+      .insert({
+        importe,
+        tipo: "Ingreso",
+        categoria_id: "Deuda",
+        subcategoria_id: "Moto",
+        fecha: new Date().toISOString().slice(0, 10),
+      })
+      .select("id")
+      .single();
+
+    if (errorMovimiento) {
+      throw new Error(
+        `Error registrando el pago del préstamo de la moto: ${errorMovimiento.message}`,
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("GastosFijos")
+      .update({ gastado: true })
+      .eq("concepto_id", conceptoId)
+      .eq("gastado", false)
+      .select();
+
+    if (error || !data?.length) {
+      const { error: errorReversion } = await supabase
+        .from("Movimientos")
+        .delete()
+        .eq("id", movimiento.id);
+
+      if (errorReversion) {
+        throw new Error(
+          `No se pudo marcar el gasto fijo como pagado (${error?.message || "ya estaba pagado"}) ni revertir el movimiento creado: ${errorReversion.message}`,
+        );
+      }
+      if (error) {
+        throw new Error(`Error actualizando el gasto fijo ${conceptoId}: ${error.message}`);
+      }
+      throw new Error(`El gasto fijo ${conceptoId} ya se había marcado como pagado.`);
+    }
+
+    return data;
+  }
+
   const { data, error } = await supabase
     .from("GastosFijos")
     .update({ gastado })

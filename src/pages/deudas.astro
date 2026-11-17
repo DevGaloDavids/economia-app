@@ -1,0 +1,13 @@
+---
+import TarjetaPrestamoMoto from "../components/deudas/TarjetaPrestamoMoto.astro";
+import MainLayout from "../layouts/MainLayout.astro";
+import { getPrestamoMotoData } from "../services/finance";
+
+export const prerender = false;
+
+const prestamoMoto = await getPrestamoMotoData();
+---
+
+<MainLayout title="Deudas - Mi Economía" activeTab="deudas">
+  <TarjetaPrestamoMoto prestamo={prestamoMoto} />
+</MainLayout>

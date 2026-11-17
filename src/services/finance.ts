@@ -10,12 +10,47 @@ const ORDEN_CUENTAS = [
   "Pulse",
   "Trade",
 ];
+const CONFIGURACION_DEUDAS = [
+  { subcategoria: "Moto", importeInicial: 8918.38, cuotasTotales: 50
+   },
+];
+
+function calcularDeudasPendientes(
+  movimientos: { importe: number | string; subcategoria_id: string | null }[],
+) {
+  return CONFIGURACION_DEUDAS.map((deuda) => {
+    const pagos = movimientos.filter(
+      (movimiento) => movimiento.subcategoria_id === deuda.subcategoria,
+    );
+    const cuotasPagadas = pagos.length;
+    const importePagado = pagos.reduce(
+      (total, pago) => total + (Number(pago.importe) || 0),
+      0,
+    );
+
+    return {
+      ...deuda,
+      cuotasPagadas,
+      cuotasRestantes: Math.max(deuda.cuotasTotales - cuotasPagadas, 0),
+      importePagado,
+      deudaPendiente: Math.max(deuda.importeInicial - importePagado, 0),
+      porcentajePagado:
+        deuda.cuotasTotales > 0
+          ? Math.min(
+              Math.round((cuotasPagadas / deuda.cuotasTotales) * 100),
+              100,
+            )
+          : 0,
+    };
+  });
+}
 
 // 1. Obtener el patrimonio de cuentas e inversiones
 export async function getPatrimonioData() {
   const [
     { data: registrosCuentas, error: errorCuentas },
     { data: registrosInversiones, error: errorInversiones },
+    { data: registrosDeudas, error: errorDeudas },
   ] = await Promise.all([
     supabase
       .from("Cuentas")
@@ -28,6 +63,11 @@ export async function getPatrimonioData() {
       .eq("tipo", "Valor")
       .order("fecha", { ascending: false })
       .order("created_at", { ascending: false }),
+    supabase
+      .from("Movimientos")
+      .select("importe, subcategoria_id")
+      .eq("tipo", "Ingreso")
+      .eq("categoria_id", "Deuda"),
   ]);
 
   if (errorCuentas) {
@@ -35,6 +75,9 @@ export async function getPatrimonioData() {
   }
   if (errorInversiones) {
     throw new Error(`Error obteniendo inversiones para el patrimonio: ${errorInversiones.message}`);
+  }
+  if (errorDeudas) {
+    throw new Error(`Error obteniendo deudas para el patrimonio: ${errorDeudas.message}`);
   }
 
   const saldosPorCuenta: Record<string, number> = {};
@@ -90,11 +133,16 @@ export async function getPatrimonioData() {
     (acc, saldo) => acc + saldo,
     0
   );
+  const deudaPendienteTotal = calcularDeudasPendientes(
+    registrosDeudas || [],
+  ).reduce((total, deuda) => total + deuda.deudaPendiente, 0);
 
   return {
-    patrimonioTotal: patrimonioCuentas + patrimonioInversiones,
+    patrimonioTotal:
+      patrimonioCuentas + patrimonioInversiones - deudaPendienteTotal,
     listaCuentasDesglose,
     listaInversionesDesglose,
+    deudaPendienteTotal,
   };
 }
 
@@ -446,4 +494,27 @@ export async function getGastosFijosData() {
   const pendiente = totalEstimado - totalPagado;
 
   return { estadoGastosFijos, totalEstimado, totalPagado, pendiente };
+}
+
+export async function getPrestamoMotoData() {
+  const { data: pagos, error } = await supabase
+    .from("Movimientos")
+    .select("importe, subcategoria_id")
+    .eq("tipo", "Ingreso")
+    .eq("categoria_id", "Deuda");
+
+  if (error) {
+    throw new Error(
+      `Error obteniendo los pagos del préstamo de la moto: ${error.message}`,
+    );
+  }
+
+  const prestamoMoto = calcularDeudasPendientes(pagos || []).find(
+    (deuda) => deuda.subcategoria === "Moto",
+  );
+  if (!prestamoMoto) {
+    throw new Error("No se encontró la configuración del préstamo de la moto.");
+  }
+
+  return prestamoMoto;
 }
