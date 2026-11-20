@@ -84,6 +84,70 @@ export async function insertRegistroMovimiento(movimiento: NuevoMovimiento) {
 }
 
 export async function marcarGastoFijoComoPagado(conceptoId: string, gastado: boolean = true) {
+  if (conceptoId === "Axa" && gastado) {
+    const { data: gastoFijo, error: errorGastoFijo } = await supabase
+      .from("GastosFijos")
+      .select("gastado")
+      .eq("concepto_id", conceptoId)
+      .maybeSingle();
+
+    if (errorGastoFijo) {
+      throw new Error(
+        `Error consultando el gasto fijo ${conceptoId}: ${errorGastoFijo.message}`,
+      );
+    }
+    if (!gastoFijo) {
+      throw new Error(`No se encontró el gasto fijo ${conceptoId}.`);
+    }
+    if (gastoFijo.gastado) {
+      return [gastoFijo];
+    }
+
+    const { data: inversion, error: errorInversion } = await supabase
+      .from("Inversiones")
+      .insert({
+        cuenta_id: "Axa",
+        Origen: "Personal",
+        importe: 100,
+        fecha: new Date().toISOString().slice(0, 10),
+        tipo: "Ingreso",
+      })
+      .select("id")
+      .single();
+
+    if (errorInversion) {
+      throw new Error(
+        `Error registrando el ingreso de Axa: ${errorInversion.message}`,
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("GastosFijos")
+      .update({ gastado: true })
+      .eq("concepto_id", conceptoId)
+      .eq("gastado", false)
+      .select();
+
+    if (error || !data?.length) {
+      const { error: errorReversion } = await supabase
+        .from("Inversiones")
+        .delete()
+        .eq("id", inversion.id);
+
+      if (errorReversion) {
+        throw new Error(
+          `No se pudo marcar el gasto fijo como pagado (${error?.message || "ya estaba pagado"}) ni revertir el ingreso creado: ${errorReversion.message}`,
+        );
+      }
+      if (error) {
+        throw new Error(`Error actualizando el gasto fijo ${conceptoId}: ${error.message}`);
+      }
+      throw new Error(`El gasto fijo ${conceptoId} ya se había marcado como pagado.`);
+    }
+
+    return data;
+  }
+
   if (conceptoId === "Pago moto" && gastado) {
     const { data: gastoFijo, error: errorGastoFijo } = await supabase
       .from("GastosFijos")
@@ -114,7 +178,7 @@ export async function marcarGastoFijoComoPagado(conceptoId: string, gastado: boo
       .from("Movimientos")
       .insert({
         importe,
-        tipo: "Ingreso",
+        tipo: "Gasto",
         categoria_id: "Deuda",
         subcategoria_id: "Moto",
         fecha: new Date().toISOString().slice(0, 10),

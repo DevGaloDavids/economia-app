@@ -187,10 +187,10 @@ const fechaHoy = new Date().toISOString().split("T")[0];
     }
 
     selectTipo.innerHTML = esInversion
-      ? '<option value="Ingreso">Ingreso</option><option value="Valor">Valor</option>'
+      ? '<option value="Valor">Valor</option>'
       : '<option value="Ingreso">Ingreso</option><option value="Gasto">Gasto</option>';
     if (!Array.from(selectTipo.options).some((option) => option.value === selectTipo.value)) {
-      selectTipo.value = "Ingreso";
+      selectTipo.value = esInversion ? "Valor" : "Ingreso";
     }
 
     if (esUltimoSaldo || esInversion) {
@@ -198,8 +198,8 @@ const fechaHoy = new Date().toISOString().split("T")[0];
       selectOrigen.value = "Personal";
       selectOrigen.disabled = true;
 
-      // Las cuentas de saldo único fijan el tipo; Axa permite elegir Ingreso o Valor.
-      selectTipo.disabled = esUltimoSaldo && !esInversion;
+      // Las cuentas de saldo único y Axa tienen un tipo fijo.
+      selectTipo.disabled = esUltimoSaldo || esInversion;
 
       contenedorConcepto?.classList.add("hidden");
       inputConcepto.value = "";

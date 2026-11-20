@@ -11,7 +11,7 @@ const ORDEN_CUENTAS = [
   "Trade",
 ];
 const CONFIGURACION_DEUDAS = [
-  { subcategoria: "Moto", importeInicial: 8918.38, cuotasTotales: 50
+  { subcategoria: "Moto", importeInicial: 8910.63, cuotasTotales: 48
    },
 ];
 
@@ -500,7 +500,7 @@ export async function getPrestamoMotoData() {
   const { data: pagos, error } = await supabase
     .from("Movimientos")
     .select("importe, subcategoria_id")
-    .eq("tipo", "Ingreso")
+    .eq("tipo", "Gasto")
     .eq("categoria_id", "Deuda");
 
   if (error) {
